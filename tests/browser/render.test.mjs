@@ -112,9 +112,14 @@ async function featureTour(browser, name) {
     await page.waitForTimeout(200);
     await page.screenshot({ path: path.join(shots, `${name}-${scheme}.png`), fullPage: true });
     // The README shows the math and diagram sections.
-    const from = await page.locator("#math").boundingBox();
-    const to = await page.locator("#alerts").boundingBox();
-    const column = await page.locator("#content").boundingBox();
+    // Measured in page coordinates, so the scroll position doesn't matter.
+    const box = (selector) => page.locator(selector).evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return { x: rect.x + window.scrollX, y: rect.y + window.scrollY, width: rect.width };
+    });
+    const from = await box("#math");
+    const to = await box("#alerts");
+    const column = await box("#content");
     await page.screenshot({
       path: path.join(shots, `${name}-${scheme}-showcase.png`),
       fullPage: true,
