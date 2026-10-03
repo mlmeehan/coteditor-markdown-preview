@@ -7,6 +7,9 @@ name: Release
 # Mac with the one-line command. Only then is it marked as the latest release,
 # which is the one the installer downloads. The repository must be public:
 # the checks download it the way users do, without signing in.
+#
+# The archive and install.sh get a signed build provenance attestation, which
+# `gh attestation verify` checks (see SECURITY.md).
 
 on:
   push:
@@ -23,6 +26,10 @@ jobs:
   release:
     name: Test and publish a pre-release
     runs-on: macos-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v7
 
@@ -54,6 +61,12 @@ jobs:
           shasum -a 256 coteditor-markdown-preview.tar.gz install.sh > SHA256SUMS
           cat SHA256SUMS
 
+      # Attests every file listed in SHA256SUMS, before anything is published.
+      - name: Attest build provenance
+        uses: actions/attest@v4
+        with:
+          subject-checksums: SHA256SUMS
+
       - name: Release notes from CHANGELOG.md
         run: |
           awk -v version="[${GITHUB_REF_NAME#v}]" '
@@ -78,11 +91,27 @@ jobs:
     name: Install it on a fresh Mac
     needs: release
     runs-on: macos-latest
+    permissions:
+      contents: read
+      attestations: read
     env:
       INSTALLER: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/install.sh
     steps:
       - name: Install CotEditor and cmark-gfm
         run: brew install --cask coteditor && brew install cmark-gfm
+
+      - name: Check the release's attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}
+        run: |
+          curl -fsSLO "$BASE/install.sh"
+          curl -fsSLO "$BASE/coteditor-markdown-preview.tar.gz"
+          for file in install.sh coteditor-markdown-preview.tar.gz; do
+            gh attestation verify "$file" --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
+              --source-ref "$GITHUB_REF"
+          done
 
       - name: Install the release with the one-line command
         run: /bin/bash -c "$(curl -fsSL "$INSTALLER")" -- --version "$GITHUB_REF_NAME"
