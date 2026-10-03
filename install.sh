@@ -316,7 +316,7 @@ download_release() {
     note "Downloading the latest release…"
     base="https://github.com/$REPO/releases/latest/download"
   else
-    note "Downloading release $tag…"
+    note "Downloading release ${tag}…"
     base="https://github.com/$REPO/releases/download/$tag"
   fi
 

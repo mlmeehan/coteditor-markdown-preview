@@ -47,6 +47,14 @@ no_partials() { [[ -z $(find "$scripts" -name '*.partial') ]]; }
 
 install() { log=$("$installer" --from "$repo/src" --no-deps "$@" 2>&1); }
 
+# macOS's bash 3.2 reads a byte of a character such as "…" right after $name
+# as part of the name, so it needs braces: ${name}…
+no_bare_names() { ! LC_ALL=C grep -nE '\$[A-Za-z_][A-Za-z0-9_]*[^ -~]' "$@"; }
+
+echo "Shell files"
+check "no \$name right before a non-ASCII character" \
+  no_bare_names "$installer" "$repo/src/Markdown Preview.sh" "$repo"/tools/*.sh
+
 echo "Fresh install"
 install
 check "installs with Command-Shift-M" test -x "$scripts/Markdown Preview.@M.sh"
