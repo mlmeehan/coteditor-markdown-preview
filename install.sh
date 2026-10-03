@@ -5,11 +5,11 @@
 #
 # Install or update with one line in Terminal:
 #
-#   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mlmeehan/coteditor-markdown-preview/main/install.sh)"
+#   /bin/bash -c "$(curl -fsSL https://github.com/mlmeehan/coteditor-markdown-preview/releases/latest/download/install.sh)"
 #
 # Options go after " -- ", for example to uninstall:
 #
-#   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mlmeehan/coteditor-markdown-preview/main/install.sh)" -- --uninstall
+#   /bin/bash -c "$(curl -fsSL https://github.com/mlmeehan/coteditor-markdown-preview/releases/latest/download/install.sh)" -- --uninstall
 #
 # Run with --help to see every option.
 #
@@ -29,7 +29,7 @@ readonly SUPPORT_NAME="_markdown-preview"
 readonly ARCHIVE="coteditor-markdown-preview.tar.gz"
 readonly DEFAULT_SHORTCUT="@M"
 readonly NOTICES="LICENSE THIRD-PARTY-NOTICES.md"
-readonly INSTALL_URL="https://raw.githubusercontent.com/$REPO/main/install.sh"
+readonly INSTALL_URL="https://github.com/$REPO/releases/latest/download/install.sh"
 # Every copy of the preview script contains this, which is how copies are
 # recognized.
 readonly MARKER="github.com/$REPO"

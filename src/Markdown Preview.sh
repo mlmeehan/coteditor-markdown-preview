@@ -23,7 +23,7 @@ readonly VERSION="1.0.0"
 # release has them all before installing it.
 readonly REQUIRED_FILES="prepare.awk preview.css preview.js"
 # shellcheck disable=SC2016  # shown to the user as-is
-readonly INSTALL_COMMAND='/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mlmeehan/coteditor-markdown-preview/main/install.sh)"'
+readonly INSTALL_COMMAND='/bin/bash -c "$(curl -fsSL https://github.com/mlmeehan/coteditor-markdown-preview/releases/latest/download/install.sh)"'
 
 # MARKDOWN_PREVIEW_NO_OPEN=1 prints where the preview was written instead of
 # opening it, and never shows a dialog. The tests and `install.sh --doctor`

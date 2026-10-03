@@ -30,8 +30,11 @@ So you can judge the risks:
   only lets the preview's own script, and the libraries it loads, run.
   Scripts, script links and event handlers written into a document are
   blocked.
-- The installer downloads releases over HTTPS from GitHub and checks them
-  against the release's `SHA256SUMS`. It puts its files only in CotEditor's
+- The one-line command runs the `install.sh` attached to the latest release,
+  not the one on the main branch; its hash is in that release's
+  `SHA256SUMS` if you want to check it before running it. The installer
+  downloads releases over HTTPS from GitHub and checks them against the
+  release's `SHA256SUMS`. It puts its files only in CotEditor's
   Scripts folder in your Library, and only replaces or removes files it
   installed itself. Unless you pass `--no-deps`, it also installs cmark-gfm
   with Homebrew. It never uses `sudo`.

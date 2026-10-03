@@ -18,7 +18,7 @@ CotEditor deliberately doesn't include a preview of its own ([coteditor/CotEdito
 Paste this into Terminal:
 
 ```sh
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mlmeehan/coteditor-markdown-preview/main/install.sh)"
+/bin/bash -c "$(curl -fsSL https://github.com/mlmeehan/coteditor-markdown-preview/releases/latest/download/install.sh)"
 ```
 
 The installer:
@@ -97,7 +97,7 @@ remote_libraries = on
 **A different shortcut:** run the installer with `--shortcut`, using CotEditor's notation: `^` Control, `~` Option, `$` Shift, `@` Command, then one letter (an uppercase letter adds Shift).
 
 ```sh
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mlmeehan/coteditor-markdown-preview/main/install.sh)" -- --shortcut '@~p'
+/bin/bash -c "$(curl -fsSL https://github.com/mlmeehan/coteditor-markdown-preview/releases/latest/download/install.sh)" -- --shortcut '@~p'
 ```
 
 That one is ⌥⌘P; use `--shortcut none` for no shortcut. You can also rename the script file in the Scripts folder yourself, as described in CotEditor's help under *Customize the Script menu*.
@@ -110,10 +110,10 @@ Add an option after ` -- ` for the rest:
 
 ```sh
 # Check the installation and print a report (useful for bug reports)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mlmeehan/coteditor-markdown-preview/main/install.sh)" -- --doctor
+/bin/bash -c "$(curl -fsSL https://github.com/mlmeehan/coteditor-markdown-preview/releases/latest/download/install.sh)" -- --doctor
 
 # Uninstall (a config or custom.css you changed is kept)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mlmeehan/coteditor-markdown-preview/main/install.sh)" -- --uninstall
+/bin/bash -c "$(curl -fsSL https://github.com/mlmeehan/coteditor-markdown-preview/releases/latest/download/install.sh)" -- --uninstall
 ```
 
 `--version v1.0.0` installs a specific release, and `--no-deps` skips installing cmark-gfm. cmark-gfm stays installed when you uninstall; remove it with `brew uninstall cmark-gfm`.

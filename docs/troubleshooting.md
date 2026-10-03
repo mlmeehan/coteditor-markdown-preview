@@ -7,7 +7,7 @@ Most problems come down to a handful of causes. Start with the doctor, then find
 Paste this into Terminal:
 
 ```sh
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mlmeehan/coteditor-markdown-preview/main/install.sh)" -- --doctor
+/bin/bash -c "$(curl -fsSL https://github.com/mlmeehan/coteditor-markdown-preview/releases/latest/download/install.sh)" -- --doctor
 ```
 
 It checks CotEditor, the installed script and its files, cmark-gfm, your settings, clashing shortcuts and whether the page can reach its libraries, then renders a small test document the way CotEditor runs the script. Anything marked ✗ is a problem, usually with the fix printed next to it. If you open an issue, include this report.
@@ -46,7 +46,7 @@ A shortcut can only belong to one command. If something else already uses ⇧⌘
 Or pick a different shortcut for the preview:
 
 ```sh
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mlmeehan/coteditor-markdown-preview/main/install.sh)" -- --shortcut '@~p'
+/bin/bash -c "$(curl -fsSL https://github.com/mlmeehan/coteditor-markdown-preview/releases/latest/download/install.sh)" -- --shortcut '@~p'
 ```
 
 `^` is Control, `~` Option, `$` Shift and `@` Command, followed by one letter; an uppercase letter adds Shift. `@~p` is ⌥⌘P.
@@ -141,8 +141,8 @@ The other files in `_markdown-preview` belong to the installer, apart from `conf
 Uninstall, then install again:
 
 ```sh
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mlmeehan/coteditor-markdown-preview/main/install.sh)" -- --uninstall
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mlmeehan/coteditor-markdown-preview/main/install.sh)"
+/bin/bash -c "$(curl -fsSL https://github.com/mlmeehan/coteditor-markdown-preview/releases/latest/download/install.sh)" -- --uninstall
+/bin/bash -c "$(curl -fsSL https://github.com/mlmeehan/coteditor-markdown-preview/releases/latest/download/install.sh)"
 ```
 
 Uninstalling keeps a `config` or `custom.css` you changed, and anything in `backup`. To go back to the default settings too, delete your settings file between the two commands:
