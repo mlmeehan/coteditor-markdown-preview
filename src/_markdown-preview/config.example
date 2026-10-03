@@ -9,9 +9,3 @@
 
 # Page appearance: auto follows macOS, or use light or dark.
 # theme = auto
-
-# Mermaid, KaTeX, highlight.js and the emoji list are downloaded from
-# cdn.jsdelivr.net when a document needs them, then cached by your browser.
-# Set this to off to stop loading them; diagrams, math and code then show as
-# plain source text. Images a document links to on the web still load.
-# remote_libraries = on

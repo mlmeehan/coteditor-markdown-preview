@@ -85,11 +85,9 @@ Use the name the app has in your Applications folder, without `.app`: Safari, Go
 
 ## Diagrams, math or code highlighting show as plain text
 
-Those three, and emoji shortcodes, are drawn by libraries the page loads from cdn.jsdelivr.net the first time it needs them. They show as source text when:
+Those three, and emoji shortcodes, are drawn by libraries installed in `_markdown-preview/lib`, which work without an internet connection. If they're missing or incomplete, the script says so and suggests reinstalling, and the doctor lists what's missing. Reinstalling with the one-line command restores them.
 
-- you're offline, and the libraries aren't in your browser's cache yet;
-- a firewall, VPN, proxy or content blocker stops cdn.jsdelivr.net (the doctor checks this);
-- `remote_libraries = off` is set in the config file.
+The page uses a copy of them in your temporary folder, next to the previews, because browsers only let a page load fonts from its own folder. The script puts the copy back if macOS has cleaned it away.
 
 If only one diagram stays as text, it most likely has a syntax error: the error message appears above its source. Try the diagram in the [Mermaid Live Editor](https://mermaid.live), keeping in mind the preview uses Mermaid 11.
 

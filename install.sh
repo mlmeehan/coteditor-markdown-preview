@@ -79,7 +79,8 @@ Usage: install.sh [options]
   --doctor          Check the installation and print a report you can paste
                     into a bug report.
   --from DIR        Install from a local folder, such as the src folder of a
-                    clone of the repository.
+                    clone of the repository. In a clone, the libraries are
+                    downloaded first if they're missing or out of date.
   -h, --help        Show this help.
 
 Updates and --uninstall replace or remove only files the installer put there.
@@ -273,7 +274,7 @@ cleanup() {
   local file
   while IFS= read -r file; do
     if [[ -n $file ]]; then
-      rm -f "$file"
+      rm -rf "$file"
     fi
   done <<< "$staged"
   if [[ -n $work ]]; then
@@ -341,15 +342,17 @@ download_release() {
 
 # The manifest, _markdown-preview/.installed, has a line for the menu script,
 #   script<TAB>its file name<TAB>its SHA-256
-# and one for each file the installer put in _markdown-preview:
+# and one for each file or folder the installer put in _markdown-preview:
 #   file<TAB>its name
+#   folder<TAB>its name
 recorded_script=""
 recorded_sum=""
 recorded_files=""
+recorded_folders=""
 
 read_manifest() {
   local kind name sum
-  recorded_script="" recorded_sum="" recorded_files=""
+  recorded_script="" recorded_sum="" recorded_files="" recorded_folders=""
   [[ -f $manifest ]] || return 0
   while IFS=$'\t' read -r kind name sum || [[ -n $kind ]]; do
     # Plain file names only, so nothing outside the two folders is touched,
@@ -363,13 +366,14 @@ read_manifest() {
         recorded_sum=$sum
         ;;
       file) recorded_files+="$name"$'\n' ;;
+      folder) recorded_folders+="$name"$'\n' ;;
     esac
   done < "$manifest"
 }
 
 # Writes the new manifest under a temporary name.
 stage_manifest() {
-  local script=$1 sum=$2 files=$3 name
+  local script=$1 sum=$2 files=$3 folders=$4 name
   staged+="$manifest.partial"$'\n'
   {
     printf '# Files installed by the Markdown Preview installer. Updates and\n'
@@ -380,6 +384,11 @@ stage_manifest() {
         printf 'file\t%s\n' "$name"
       fi
     done <<< "$files"
+    while IFS= read -r name; do
+      if [[ -n $name ]]; then
+        printf 'folder\t%s\n' "$name"
+      fi
+    done <<< "$folders"
   } > "$manifest.partial" || die "Couldn't write $manifest.partial, so nothing was changed."
 }
 
@@ -526,10 +535,49 @@ ensure_cmark_gfm() {
   fi
 }
 
-# Copies a file next to where it goes, under a temporary name.
+# Copies a file or folder next to where it goes, under a temporary name.
 stage() {
   staged+="$2"$'\n'
-  cp "$1" "$2" || die "Couldn't copy ${1##*/}, so nothing was changed."
+  rm -rf "$2"
+  cp -R "$1" "$2" || die "Couldn't copy ${1##*/}, so nothing was changed."
+}
+
+# Replaces a folder with its staged copy.
+swap_folder() {
+  rm -rf "$1.old"
+  if [[ -e $1 || -L $1 ]]; then
+    mv -f "$1" "$1.old"
+  fi
+  mv -f "$1.partial" "$1"
+  rm -rf "$1.old"
+}
+
+# In a clone of the repository, builds src/_markdown-preview/lib, which isn't
+# kept in git, from the versions pinned in tools/fetch-libraries.sh. That
+# script does nothing when the folder is already up to date. Releases come
+# with the folder, so this is only for --from.
+fetch_libraries() {
+  local fetcher="$payload/../tools/fetch-libraries.sh" output
+  [[ -f $fetcher ]] || return 0
+  if ! output=$(/bin/bash "$fetcher" "$payload/$SUPPORT_NAME/lib" 2>&1); then
+    printf '%s\n' "$output" >&2
+    die "Couldn't download the libraries into $payload/$SUPPORT_NAME/lib, so nothing was installed."
+  fi
+  case $output in
+    *"up to date"*) ;;
+    *) ok "Downloaded the libraries into $payload/$SUPPORT_NAME/lib" ;;
+  esac
+}
+
+# Prints how many of the files listed in DIR/manifest.txt are missing or
+# don't match their SHA-256 there. The list is in `shasum -a 256` format (see
+# tools/fetch-libraries.sh), and shasum comes with macOS, which the preview
+# needs anyway.
+damaged_libraries() {
+  local listed intact
+  listed=$(sed '1,/^$/d' "$1/manifest.txt" | grep -c . || true)
+  intact=$( (cd "$1" && sed '1,/^$/d' manifest.txt | shasum -a 256 -c 2>/dev/null) | grep -c ': OK$' || true)
+  printf '%s\n' $((listed - intact))
 }
 
 # Checks that the release, or the folder given with --from, has everything its
@@ -539,8 +587,9 @@ check_payload() {
   [[ -f "$payload/$MENU_NAME.sh" ]] || die "$payload doesn't contain \"$MENU_NAME.sh\"."
   required=$(awk -F '"' '/^readonly REQUIRED_FILES=/ { print $2; exit }' "$payload/$MENU_NAME.sh")
   for name in ${required:-prepare.awk preview.css preview.js}; do
-    [[ -f "$payload/$SUPPORT_NAME/$name" ]] ||
+    if [[ ! -f "$payload/$SUPPORT_NAME/$name" ]]; then
       die "$payload doesn't contain $SUPPORT_NAME/$name, so nothing was installed."
+    fi
   done
   for name in $NOTICES; do
     [[ -f "$payload/$name" || -f "$payload/../$name" ]] ||
@@ -550,7 +599,7 @@ check_payload() {
 
 do_install() {
   local app new_version new_sum target dest keys file name others conflicts
-  local new_files="" updating=0 kept_config=0 replacing=0
+  local new_files="" new_folders="" updating=0 kept_config=0 replacing=0
 
   require_macos
   heading "Markdown Preview for CotEditor"
@@ -558,6 +607,7 @@ do_install() {
   if [[ -n $from ]]; then
     [[ -d $from ]] || die "No folder at $from."
     payload=$(cd "$from" && pwd)
+    fetch_libraries
   else
     download_release "$version"
   fi
@@ -565,6 +615,12 @@ do_install() {
   new_version=$(script_version "$payload/$MENU_NAME.sh")
   new_sum=$(sha256 "$payload/$MENU_NAME.sh") ||
     die "Couldn't compute checksums: shasum, sha256sum and openssl all failed. Nothing was changed."
+  # Every library file the lib folder lists, intact. After the checksum above,
+  # so that broken checksum tools are reported as such.
+  if [[ -f "$payload/$SUPPORT_NAME/lib/manifest.txt" ]] &&
+    [[ $(damaged_libraries "$payload/$SUPPORT_NAME/lib") -gt 0 ]]; then
+    die "Some files in $payload/$SUPPORT_NAME/lib are missing or damaged, so nothing was installed."
+  fi
 
   if app=$(find_coteditor); then
     ok "CotEditor $(app_version "$app") is installed"
@@ -609,6 +665,9 @@ do_install() {
     if [[ -f $file ]]; then
       stage "$file" "$support_dir/$name.partial"
       new_files+="$name"$'\n'
+    elif [[ -d $file ]]; then
+      stage "$file" "$support_dir/$name.partial"
+      new_folders+="$name"$'\n'
     fi
   done
   for name in $NOTICES; do
@@ -624,7 +683,7 @@ do_install() {
   # until it's ready.
   stage "$payload/$MENU_NAME.sh" "$scripts_dir/.$MENU_NAME.partial"
   chmod 755 "$scripts_dir/.$MENU_NAME.partial"
-  stage_manifest "$target" "$new_sum" "$new_files"
+  stage_manifest "$target" "$new_sum" "$new_files" "$new_folders"
 
   # Make room for the script. Whatever has its name goes to backup/ unless
   # it's the installer's own unchanged copy, and so does an edited copy under
@@ -656,6 +715,11 @@ do_install() {
       mv -f "$support_dir/$name.partial" "$support_dir/$name"
     fi
   done <<< "$new_files"
+  while IFS= read -r name; do
+    if [[ -n $name ]]; then
+      swap_folder "$support_dir/$name"
+    fi
+  done <<< "$new_folders"
   if [[ -f "$support_dir/config" ]]; then
     kept_config=1
   elif [[ -f "$support_dir/config.example" ]]; then
@@ -669,12 +733,12 @@ do_install() {
     rm -f "$current"
   fi
 
-  # Files an earlier version had that this one doesn't.
+  # Files and folders an earlier version had that this one doesn't.
   while IFS= read -r name; do
-    if [[ -n $name ]] && ! has_line "$new_files" "$name"; then
-      rm -f "$support_dir/$name"
+    if [[ -n $name ]] && ! has_line "$new_files$new_folders" "$name"; then
+      rm -rf "${support_dir:?}/${name:?}"
     fi
-  done <<< "$recorded_files"
+  done <<< "$recorded_files$recorded_folders"
 
   if command -v xattr >/dev/null 2>&1; then
     xattr -dr com.apple.quarantine "$dest" "$support_dir" 2>/dev/null || true
@@ -763,12 +827,18 @@ do_uninstall() {
           rm -f "$support_dir/$name"
         fi
       done <<< "$recorded_files"
+      while IFS= read -r name; do
+        if [[ -n $name ]]; then
+          rm -rf "${support_dir:?}/${name:?}"
+        fi
+      done <<< "$recorded_folders"
       rm -f "$manifest"
     else
       # Installed by hand: the files a release contains.
       for name in prepare.awk preview.css preview.js config.example $NOTICES; do
         rm -f "$support_dir/$name"
       done
+      rm -rf "${support_dir:?}/lib"
     fi
     ok "Removed its support files"
     if ! rmdir "$support_dir" 2>/dev/null; then
@@ -811,6 +881,23 @@ app_exists() {
   [[ -n $found ]]
 }
 
+# Checks the libraries in _markdown-preview/lib against the files and hashes
+# in its manifest.txt.
+check_libraries() {
+  local lib="$support_dir/lib" damaged versions
+  if [[ ! -f "$lib/manifest.txt" ]]; then
+    problem "The libraries for diagrams, math and highlighting aren't installed ($SUPPORT_NAME/lib). Reinstall to fix it."
+    return 0
+  fi
+  damaged=$(damaged_libraries "$lib")
+  if [[ $damaged -gt 0 ]]; then
+    problem "$damaged library file(s) are missing or damaged in $SUPPORT_NAME/lib. Reinstall to fix it."
+  else
+    versions=$(sed -n '/^$/q;s/^\([^ ]*\) \([^ ]*\) .*/\1 \2/p' "$lib/manifest.txt" | paste -sd ',' - | sed 's/,/, /g')
+    ok "Libraries (no internet needed): $versions"
+  fi
+}
+
 # Lists the settings and points out any the preview script would ignore.
 check_settings() {
   local line key value shown=""
@@ -847,13 +934,10 @@ check_settings() {
         esac
         ;;
       remote_libraries)
-        case $(lowercase "$value") in
-          on | off | yes | no | true | false | 1 | 0) ;;
-          *) warn "Settings: remote_libraries can be on or off, so \"$value\" is treated as on" ;;
-        esac
+        note "Settings: remote_libraries is no longer used, because the libraries are installed with Markdown Preview. You can remove that line."
         ;;
       *)
-        warn "Settings: there's no setting called \"$key\". The settings are browser, theme and remote_libraries."
+        warn "Settings: there's no setting called \"$key\". The settings are browser and theme."
         ;;
     esac
   done < "$support_dir/config"
@@ -862,7 +946,7 @@ check_settings() {
 
 do_doctor() {
   local app cmark="" elsewhere brew name keys conflicts file output latest others files
-  local installed_version="" sample status
+  local installed_version="" sample status preview_env
 
   heading "Markdown Preview doctor"
 
@@ -934,6 +1018,7 @@ do_doctor() {
       problem "Missing support file: $SUPPORT_NAME/$name"
     fi
   done <<< "$files"
+  check_libraries
 
   check_settings
   if [[ -f "$support_dir/custom.css" ]]; then
@@ -954,27 +1039,29 @@ do_doctor() {
     note "Homebrew isn't installed"
   fi
 
-  if curl -fsS --max-time 8 -o /dev/null https://cdn.jsdelivr.net/npm/katex@0.18.9/dist/katex.min.js 2>/dev/null; then
-    ok "cdn.jsdelivr.net is reachable (diagrams, math and highlighting)"
-  else
-    warn "cdn.jsdelivr.net isn't reachable, so diagrams, math and highlighting show as source text"
-  fi
-
   if [[ -n $current && -n $cmark ]]; then
-    sample="${TMPDIR:-/tmp}/markdown-preview-doctor.md"
+    # In a folder of its own, which cleanup removes.
+    work=$(mktemp -d "${TMPDIR:-/tmp}/markdown-preview.XXXXXX")
+    sample="$work/doctor.md"
     # shellcheck disable=SC2016  # literal Markdown math
     printf '# Doctor\n\nInline $x^2$ and a table:\n\n| a | b |\n|---|---|\n| 1 | 2 |\n' > "$sample"
     # Run it the way CotEditor does: without your shell's PATH or settings.
+    preview_env=(HOME="$HOME" PATH=/usr/bin:/bin:/usr/sbin:/sbin MARKDOWN_PREVIEW_NO_OPEN=1)
+    if [[ -n ${TMPDIR:-} ]]; then
+      preview_env+=(TMPDIR="$TMPDIR")
+    fi
     # shellcheck disable=SC2094  # the script only reads the sample
-    if output=$(env -i HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-      MARKDOWN_PREVIEW_NO_OPEN=1 "$current" "$sample" < "$sample" 2>&1); then
+    if output=$(env -i "${preview_env[@]}" "$current" "$sample" < "$sample" 2>&1); then
       ok "Test preview: ${output%%$'\n'*}"
       note "${output#*$'\n'}"
+      # The sample's name is new each time, and so is its preview's.
+      case ${output%%$'\n'*} in
+        */coteditor-markdown-preview/preview-*.html) rm -f "${output%%$'\n'*}" ;;
+      esac
     else
       problem "Test preview failed:"
       printf '%s\n' "$output" | sed 's/^/      /'
     fi
-    rm -f "$sample"
   fi
 
   if latest=$(latest_tag) && [[ -n $installed_version ]]; then

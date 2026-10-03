@@ -1,24 +1,28 @@
 // Renders Markdown with the preview script and checks the result in real
-// browsers: Chromium, and WebKit (Safari's engine) when it is installed.
+// browsers: Chromium, and WebKit (Safari's engine) and Firefox when they are
+// installed.
 //
-//   cd tests/browser && npm ci && npx playwright install chromium webkit
+//   cd tests/browser && npm ci && npx playwright install chromium webkit firefox
 //   npm test
 //
 // Screenshots of the feature tour are written to tests/browser/screenshots.
-// Needs cmark-gfm and a network connection (the libraries come from jsDelivr).
+// Needs cmark-gfm. The libraries are fetched first if they're missing; after
+// that, pages are opened with the network blocked, since everything they use
+// is installed with them.
 
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium, webkit } from "playwright";
+import { chromium, firefox, webkit } from "playwright";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, "../..");
 const tour = path.join(repo, "examples", "feature-tour.md");
 const shots = path.join(here, "screenshots");
 mkdirSync(shots, { recursive: true });
+execFileSync("/bin/bash", [path.join(repo, "tools", "fetch-libraries.sh")], { stdio: ["ignore", "ignore", "inherit"] });
 
 let failures = 0;
 function check(label, condition, detail = "") {
@@ -47,7 +51,7 @@ function configuredCopy(config) {
   return dir;
 }
 
-async function open(browser, file, colorScheme = "light", { offline = false } = {}) {
+async function open(browser, file, colorScheme = "light") {
   const context = await browser.newContext({ colorScheme, viewport: { width: 1100, height: 900 } });
   await context.addInitScript(() => {
     window.__violations = [];
@@ -65,7 +69,8 @@ async function open(browser, file, colorScheme = "light", { offline = false } = 
   page.on("request", (request) => {
     if (!request.url().startsWith("file:")) requests.push(request.url());
   });
-  if (offline) await context.route(/^https?:/, (route) => route.abort());
+  // No network: a request to anything but a file fails, and is listed.
+  await context.route(/^(?!file:)/, (route) => route.abort());
   await page.goto("file://" + file);
   await page.waitForLoadState("networkidle").catch(() => {});
   await page.waitForTimeout(1000);
@@ -79,10 +84,16 @@ async function featureTour(browser, name) {
 
   for (const scheme of ["light", "dark"]) {
     console.log(`${name}, feature tour, ${scheme}`);
-    const { page, context, problems } = await open(browser, file, scheme);
+    const { page, context, problems, requests } = await open(browser, file, scheme);
 
     check("math renders", (await count(page, ".katex")) === 4, `${await count(page, ".katex")} found`);
     check("no math errors", (await count(page, ".katex-error")) === 0);
+    // Fonts nothing uses yet stay unloaded, and WebKit reports a font it can't
+    // load only in the console, so ask for one and check it arrived.
+    const fonts = await page.evaluate(() => document.fonts.load("1em KaTeX_Main").then(
+      (faces) => `${faces.filter((face) => face.status === "loaded").length} loaded`,
+      (error) => String(error)));
+    check("math fonts load", /^[1-9]\d* loaded$/.test(fonts), fonts);
     check("both diagrams render", (await count(page, ".diagram svg")) === 2);
     check("diagram theme follows the appearance",
       (await page.locator(".diagram").first().getAttribute("data-theme")) === (scheme === "dark" ? "dark" : "default"));
@@ -107,6 +118,7 @@ async function featureTour(browser, name) {
       page.url());
 
     check("no errors", problems.length === 0, problems.join("; "));
+    check("no network requests", requests.length === 0, requests.join(", "));
 
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(200);
@@ -149,26 +161,17 @@ async function edgeCases(browser, name) {
 
 async function settings(browser, name) {
   console.log(`${name}, settings`);
-  const offline = configuredCopy("remote_libraries = off\ntheme = dark\n");
-  const file = preview(tour, { srcDir: offline });
-  const { page, context, requests } = await open(browser, file, "light");
+  const dark = configuredCopy("theme = dark\nremote_libraries = off\n");
+  const { page, context, requests } = await open(browser, preview(tour, { srcDir: dark }), "light");
 
-  check("remote_libraries = off makes no requests", requests.length === 0, requests.join(", "));
-  check("math falls back to its source", (await count(page, ".md-math:empty")) === 4);
-  check("diagrams say why they are off", (await count(page, ".diagram-note.is-info")) === 2);
   check("theme = dark wins over a light system",
     (await page.evaluate(() => getComputedStyle(document.body).backgroundColor)) !== "rgb(255, 255, 255)");
+  check("the old remote_libraries setting changes nothing", (await count(page, ".diagram svg")) === 2);
+  check("no network requests", requests.length === 0, requests.join(", "));
   await context.close();
-
-  const missing = configuredCopy("");
-  const page2 = await open(browser, preview(tour, { srcDir: missing }), "light", { offline: true });
-  check("offline: page still renders", (await count(page2.page, ".markdown-alert")) === 5);
-  check("offline: diagrams show their source", (await count(page2.page, ".diagram pre")) === 2);
-  check("offline: no page errors", !page2.problems.some((p) => p.startsWith("page error")), page2.problems.join("; "));
-  await page2.context.close();
 }
 
-const engines = [["chromium", chromium], ["webkit", webkit]];
+const engines = [["chromium", chromium], ["webkit", webkit], ["firefox", firefox]];
 for (const [name, engine] of engines) {
   let browser;
   try {
@@ -176,7 +179,7 @@ for (const [name, engine] of engines) {
     const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
     browser = await engine.launch({ proxy });
   } catch (error) {
-    if (name === "webkit" && !process.env.CI) {
+    if (name !== "chromium" && !process.env.CI) {
       console.log(`Skipping ${name}: ${error.message.split("\n")[0]}`);
       continue;
     }

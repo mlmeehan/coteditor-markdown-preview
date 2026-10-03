@@ -1,14 +1,17 @@
 #!/bin/bash
 #
 # Tests install.sh against a temporary scripts folder, never your real one.
-# Installs from the local src folder, so it needs no network; the installed
-# script is test-run, so cmark-gfm must be installed. Needs macOS.
+# Installs from the local src folder. The libraries are fetched first if
+# they're missing, which needs the network that once; after that the tests run
+# offline. The installed script is test-run, so cmark-gfm must be installed.
+# Needs macOS.
 
 set -eu -o pipefail
 
 here=$(cd -P -- "$(dirname -- "$0")" && pwd)
 repo=$(dirname "$here")
 installer="$repo/install.sh"
+/bin/bash "$repo/tools/fetch-libraries.sh" >/dev/null
 work=$(mktemp -d "${TMPDIR:-/tmp}/installer-tests.XXXXXX")
 trap 'rm -rf "$work"' EXIT
 
@@ -50,6 +53,9 @@ check "installs with Command-Shift-M" test -x "$scripts/Markdown Preview.@M.sh"
 for file in prepare.awk preview.css preview.js config config.example LICENSE THIRD-PARTY-NOTICES.md .installed; do
   check "installs $file" test -f "$support/$file"
 done
+check "installs the libraries" test -f "$support/lib/mermaid/mermaid.min.js"
+check "with their licenses" test -f "$support/lib/katex/fonts/OFL.txt"
+check "lists the lib folder" grep -q "^folder$(printf '\t')lib$" "$support/.installed"
 check "reports the shortcut" contains "$log" "⇧⌘M"
 check "leaves no temporary files" no_partials
 # shellcheck disable=SC2016  # literal Markdown math
@@ -63,6 +69,14 @@ install
 check "says it updated" contains "$log" "Updated"
 check "keeps a changed config" grep -q '^theme = dark' "$support/config"
 check "mentions the kept config" contains "$log" "Kept your settings"
+check "replaces the lib folder rather than nesting it" test ! -e "$support/lib/lib"
+check "leaves no old lib folder" test ! -e "$support/lib.old"
+
+# An update from a version without the lib folder.
+mv "$support/lib" "$work/lib-saved"
+install
+check "adds the lib folder to an earlier install" test -f "$support/lib/manifest.txt"
+rm -rf "$work/lib-saved"
 
 install --shortcut '@~p'
 check "--shortcut renames the script" test -x "$scripts/Markdown Preview.@~p.sh"
@@ -136,6 +150,25 @@ check "refuses a version that's missing a file" contains "$log" "doesn't contain
 check "and keeps the installed one" test -f "$support/preview.js"
 mv "$work/preview.js" "$broken/_markdown-preview/preview.js"
 
+mv "$broken/_markdown-preview/lib/highlight/highlight.min.js" "$work/highlight.min.js"
+if log=$("$installer" --from "$broken" --no-deps 2>&1); then false; fi
+check "refuses a version that's missing a library" contains "$log" "_markdown-preview/lib are missing or damaged"
+check "and keeps the installed libraries" test -f "$support/lib/highlight/highlight.min.js"
+mv "$work/highlight.min.js" "$broken/_markdown-preview/lib/highlight/highlight.min.js"
+cp "$broken/_markdown-preview/lib/emoji/emoji.js" "$work/emoji.js"
+printf '\n' >> "$broken/_markdown-preview/lib/emoji/emoji.js"
+if log=$("$installer" --from "$broken" --no-deps 2>&1); then false; fi
+check "refuses a version with a damaged library" contains "$log" "_markdown-preview/lib are missing or damaged"
+mv "$work/emoji.js" "$broken/_markdown-preview/lib/emoji/emoji.js"
+
+rm "$support/lib/katex/katex.min.css"
+log=$("$installer" --doctor 2>&1 || true)
+check "doctor notices a missing library file" contains "$log" "1 library file(s) are missing or damaged"
+printf '\n' >> "$support/lib/katex/katex.min.js"
+log=$("$installer" --doctor 2>&1 || true)
+check "and a damaged one" contains "$log" "2 library file(s) are missing or damaged"
+install
+
 mkdir "$work/broken-tools"
 for tool in shasum sha256sum openssl; do
   printf '#!/bin/sh\nexit 1\n' > "$work/broken-tools/$tool"
@@ -164,10 +197,14 @@ log=$("$installer" --doctor 2>&1 || true)
 check "finds the installation" contains "$log" "Installed: \"Markdown Preview.@M.sh\""
 check "finds cmark-gfm" contains "$log" "cmark-gfm: "
 check "runs a test preview" contains "$log" "Test preview: "
+tested=$(sed -n 's/.*Test preview: //p' <<< "$log")
+check "removes its test preview" test -n "$tested" -a ! -e "$tested"
+check "and its sample document" test -z "$(find "$TMPDIR" -name 'markdown-preview*')"
 check "notices the clash" contains "$log" "uses the same shortcut"
 check "mentions your own copies" contains "$log" "\"Markdown Preview in Chrome.@~M.sh\", a copy"
 check "points out an unknown setting" contains "$log" "no setting called \"them\""
-check "points out a value it ignores" contains "$log" "\"maybe\" is treated as on"
+check "says remote_libraries is no longer used" contains "$log" "remote_libraries is no longer used"
+check "checks the libraries" contains "$log" "Libraries (no internet needed): katex"
 check "accepts values in any case" lacks "$log" "\"Dark\" is treated"
 # Looking up the browser needs macOS itself, not the stand-in uname.
 if [[ $(/usr/bin/uname -s) == Darwin ]]; then
@@ -188,6 +225,7 @@ log=$(/bin/bash -c "$(cat "$installer")" --uninstall 2>&1)
 check "works without the --" contains "$log" "Removing Markdown Preview"
 check "removes the script" test ! -e "$scripts/Markdown Preview.@M.sh"
 check "removes program files" test ! -e "$support/preview.js"
+check "removes the libraries" test ! -e "$support/lib"
 check "keeps custom.css" test -f "$support/custom.css"
 check "keeps a changed config" test -f "$support/config"
 check "keeps backups" test -d "$support/backup"
@@ -202,12 +240,19 @@ check "removes everything when nothing was changed" test ! -e "$support"
 echo "Installed by hand"
 mkdir -p "$support"
 cp "$repo/src/Markdown Preview.sh" "$scripts/Markdown Preview.@M.sh"
-cp "$repo/src/_markdown-preview/"* "$support/"
+cp -R "$repo/src/_markdown-preview/"* "$support/"
 install
 check "updates a copy installed by hand" contains "$log" "Updated"
 check "saves the earlier copy, in case you changed it" test -f "$support/backup/Markdown Preview.@M.sh"
 check "starts keeping its list of files" test -f "$support/.installed"
 log=$("$installer" --uninstall 2>&1)
+check "uninstall removes the libraries too" test ! -e "$support/lib"
+rm -rf "$support"
+mkdir -p "$support"
+cp -R "$repo/src/_markdown-preview/"* "$support/"
+cp "$repo/src/Markdown Preview.sh" "$scripts/Markdown Preview.@M.sh"
+log=$("$installer" --uninstall 2>&1)
+check "uninstalls a copy installed by hand, libraries and all" test ! -e "$support/lib"
 rm -rf "$support"
 
 echo "Links"

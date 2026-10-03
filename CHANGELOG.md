@@ -6,6 +6,25 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+
+- Previews work without an internet connection. Mermaid, KaTeX and its fonts,
+  highlight.js and the emoji list are now installed with Markdown Preview
+  instead of loaded from cdn.jsdelivr.net, and the doctor checks them.
+  Reinstalling 1.0.0 afterwards leaves `_markdown-preview/lib` behind; it's
+  harmless, and you can delete it.
+
+### Removed
+
+- The `remote_libraries` setting, since nothing is loaded from the internet.
+  The doctor points it out if it's still in your config file.
+
+### Security
+
+- The preview refuses to write to a temporary folder that's a link or belongs
+  to someone else, since the page now runs the libraries copied there.
+- The installer and the doctor check every library file against its SHA-256.
+
 ## [1.0.0] - 2026-10-03
 
 The first public release.

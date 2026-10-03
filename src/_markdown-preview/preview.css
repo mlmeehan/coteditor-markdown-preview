@@ -664,11 +664,6 @@ body {
   white-space: pre-wrap;
 }
 
-.diagram-note.is-info {
-  background: var(--surface);
-  color: var(--muted);
-}
-
 /* Small screens and printing ------------------------------------------------------ */
 
 @media (max-width: 600px) {

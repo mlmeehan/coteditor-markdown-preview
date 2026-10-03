@@ -11,9 +11,13 @@ issue first so we can agree on the approach.
 | `src/Markdown Preview.sh` | The script CotEditor runs. Installed as `Markdown Preview.@M.sh`. |
 | `src/_markdown-preview/prepare.awk` | Runs before cmark-gfm: folds front matter and protects math from Markdown. |
 | `src/_markdown-preview/preview.css` | The page's look, in light and dark. |
-| `src/_markdown-preview/preview.js` | Diagrams, math, highlighting, alerts, emoji, anchors and the table of contents. Pinned library versions and hashes are at the top. |
+| `src/_markdown-preview/preview.js` | Diagrams, math, highlighting, alerts, emoji, anchors and the table of contents. |
+| `src/_markdown-preview/lib/` | The browser libraries, built by `tools/fetch-libraries.sh`. Not in git; included in releases. |
 | `src/_markdown-preview/config.example` | The settings file template. |
 | `install.sh` | The installer, updater, uninstaller and doctor. |
+| `tools/fetch-libraries.sh` | Downloads the pinned libraries from npm, checks their hashes and builds `lib/`. |
+| `tools/mermaid-notices.mjs` | Lists the licenses of the packages bundled into Mermaid, for `lib/mermaid/BUNDLED-LICENSES.txt`. |
+| `tools/licenses/` | License texts copied into `lib/`. |
 | `examples/feature-tour.md` | A document that uses every feature. |
 | `tests/` | Tests; see below. |
 
@@ -24,8 +28,9 @@ issue first so we can agree on the approach.
   bash 4 features such as associative arrays, `${var,,}` and `mapfile`, and
   gawk extensions such as `gensub` or `match()` with an array.
 - **No new dependencies.** cmark-gfm is the only thing users install. Browser
-  libraries come from jsDelivr, pinned to exact versions with Subresource
-  Integrity hashes, and load only when a document needs them.
+  libraries are pinned in `tools/fetch-libraries.sh`, shipped in each release
+  and loaded only when a document needs them. Previews must work offline:
+  nothing may be loaded from the internet.
 - **Keep it quiet when it works.** CotEditor treats anything the script writes
   to standard error as an error, so print nothing there on success.
 
@@ -36,25 +41,30 @@ On a Mac, with [Homebrew](https://brew.sh):
 ```sh
 brew install cmark-gfm shellcheck
 
-shellcheck "src/Markdown Preview.sh" install.sh tests/*.sh
+shellcheck "src/Markdown Preview.sh" install.sh tests/*.sh tools/*.sh
 tests/test-prepare.sh     # prepare.awk, against tests/prepare-cases.txt
 tests/test-script.sh      # the preview script, run the way CotEditor runs it
 tests/test-installer.sh   # the installer, in a temporary folder
-tests/check-sri.sh        # pinned libraries still match jsDelivr (needs network)
 ```
+
+The libraries in `src/_markdown-preview/lib` aren't kept in git. The tests,
+and `./install.sh --from src`, download them with `tools/fetch-libraries.sh`
+when they're missing or out of date, so the first run needs the network.
 
 `test-installer.sh` never touches your real Scripts folder, and needs macOS.
 `test-prepare.sh` and `test-script.sh` also run on Linux with bash 5 and gawk
 or mawk (`AWK=mawk tests/test-prepare.sh`), but CI runs everything on macOS
 because that's what matters.
 
-The browser tests render the feature tour in Chromium and WebKit, Safari's
-engine, and save screenshots to `tests/browser/screenshots/`:
+The browser tests render the feature tour in Chromium, WebKit (Safari's
+engine) and Firefox with the network blocked, and save screenshots to
+`tests/browser/screenshots/`. Firefox is there because it's the strictest
+about what a page opened from a file may load, such as KaTeX's fonts:
 
 ```sh
 cd tests/browser
 npm ci
-npx playwright install chromium webkit
+npx playwright install chromium webkit firefox
 npm test
 ```
 
@@ -75,24 +85,23 @@ Run the one-line installer again to go back to the latest release.
 
 ## Updating a library
 
-Libraries are pinned in `LIBRARIES` and `GRAMMARS` at the top of
-`src/_markdown-preview/preview.js`. To move to a new version, change the
-version in the URL and replace its hash with:
+Libraries are pinned in `PACKAGES` at the top of `tools/fetch-libraries.sh`.
+To move to a new version, change the version and replace its hash with:
 
 ```sh
-curl -sL URL | openssl dgst -sha384 -binary | openssl base64 -A
+npm view PACKAGE@VERSION dist.integrity
 ```
 
-When updating KaTeX, also change the URL in the doctor's reachability check in
-`install.sh`, which fetches `katex.min.js` to test that jsDelivr can be reached.
+Update its version in the table in `THIRD-PARTY-NOTICES.md` too. Then run
+the tests, which download the new version first. When updating Mermaid, also
+run `node tools/mermaid-notices.mjs` to refresh the licenses of the packages
+bundled into it, and check that their licenses still allow redistribution. Mermaid stays on 11.x for now: 12.0 changed the default layout
+and theme, so diagrams would look different from most other renderers.
 
-Then run `tests/check-sri.sh` and the browser tests. Mermaid stays on 11.x for
-now: 12.0 changed the default layout and theme, so diagrams would look
-different from most other renderers.
-
-To support another highlight.js language, add its file from
-`@highlightjs/cdn-assets/languages/` to `GRAMMARS` with its hash, and any
-aliases people use for it to `GRAMMAR_ALIASES`.
+To support another highlight.js language, add its name from
+`@highlightjs/cdn-assets/languages/` to `GRAMMARS` in `preview.js`, and any
+aliases people use for it to `GRAMMAR_ALIASES`. The next test run or
+`--from` install adds its file to `lib/`.
 
 ## Releasing
 

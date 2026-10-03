@@ -5,7 +5,8 @@ on:
     branches: [main]
   pull_request:
   schedule:
-    # Weekly, to notice if a pinned library stops matching its hash on the CDN.
+    # Weekly, to notice if a pinned library can no longer be downloaded from
+    # npm or no longer matches its hash.
     - cron: "23 7 * * 1"
   workflow_dispatch:
 
@@ -27,7 +28,10 @@ jobs:
         run: brew install cmark-gfm shellcheck
 
       - name: ShellCheck
-        run: shellcheck "src/Markdown Preview.sh" install.sh tests/*.sh
+        run: shellcheck "src/Markdown Preview.sh" install.sh tests/*.sh tools/*.sh
+
+      - name: Fetch the libraries (checked against their pinned hashes)
+        run: /bin/bash tools/fetch-libraries.sh
 
       - name: prepare.awk with macOS awk
         run: /bin/bash tests/test-prepare.sh
@@ -38,17 +42,17 @@ jobs:
       - name: Installer
         run: /bin/bash tests/test-installer.sh
 
-      - name: Pinned libraries still match jsDelivr
-        run: /bin/bash tests/check-sri.sh
-
   browsers:
-    name: Chromium and WebKit
+    name: Chromium, WebKit and Firefox
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
 
       - name: Install cmark-gfm
         run: brew install cmark-gfm
+
+      - name: Fetch the libraries
+        run: /bin/bash tools/fetch-libraries.sh
 
       - uses: actions/setup-node@v7
         with:
@@ -58,9 +62,9 @@ jobs:
         working-directory: tests/browser
         run: |
           npm ci --no-audit --no-fund
-          npx playwright install chromium webkit
+          npx playwright install chromium webkit firefox
 
-      - name: Render the feature tour and check it
+      - name: Render the feature tour with the network blocked and check it
         working-directory: tests/browser
         run: npm test
 

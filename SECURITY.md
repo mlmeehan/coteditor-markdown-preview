@@ -17,15 +17,18 @@ So you can judge the risks:
 
 - The script reads the document CotEditor passes it, converts it on your Mac
   and writes one HTML file to your temporary folder
-  (`$TMPDIR/coteditor-markdown-preview/`). It never uploads anything.
-- The page loads Mermaid, KaTeX, highlight.js and an emoji list from
-  cdn.jsdelivr.net when a document needs them. Every script and stylesheet is
-  pinned to an exact version and checked with Subresource Integrity, so a
-  modified file is refused; the fonts KaTeX's stylesheet loads come from the
-  same pinned version. `remote_libraries = off` in the settings stops loading
-  them.
+  (`$TMPDIR/coteditor-markdown-preview/`), next to a copy of the libraries
+  below. It refuses that folder if it's a link or isn't yours. It never
+  uploads anything.
+- Mermaid, KaTeX, highlight.js and an emoji list are installed with the
+  script, in `_markdown-preview/lib`, and the page loads them from there; it
+  contacts no server of its own. Their pinned versions are downloaded from
+  npm when a release is built and checked against the packages' integrity
+  hashes. The installer checks the release against its SHA-256 checksum and
+  each library file against the SHA-256 listed in `lib/manifest.txt`, and the
+  doctor checks them again.
 - Images and other files a document links to on the web load as they would in
-  any browser, whatever the settings.
+  any browser.
 - Raw HTML in documents is rendered, but the page's Content Security Policy
   only lets the preview's own script, and the libraries it loads, run.
   Scripts, script links and event handlers written into a document are

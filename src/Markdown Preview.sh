@@ -21,7 +21,7 @@ shopt -u patsub_replacement 2>/dev/null || true
 readonly VERSION="1.0.0"
 # The files in _markdown-preview this version needs. The installer checks a
 # release has them all before installing it.
-readonly REQUIRED_FILES="prepare.awk preview.css preview.js"
+readonly REQUIRED_FILES="prepare.awk preview.css preview.js lib/manifest.txt"
 # shellcheck disable=SC2016  # shown to the user as-is
 readonly INSTALL_COMMAND='/bin/bash -c "$(curl -fsSL https://github.com/mlmeehan/coteditor-markdown-preview/releases/latest/download/install.sh)"'
 
@@ -71,7 +71,6 @@ done
 
 browser=""
 theme="auto"
-remote_libraries="on"
 
 lowercase() {
   printf '%s' "$1" | /usr/bin/tr '[:upper:]' '[:lower:]'
@@ -96,7 +95,6 @@ read_config() {
     case $key in
       browser) browser=$value ;;
       theme) theme=$(lowercase "$value") ;;
-      remote_libraries) remote_libraries=$(lowercase "$value") ;;
     esac
   done < "$support/config"
 }
@@ -106,11 +104,6 @@ read_config
 case $theme in
   light | dark) ;;
   *) theme="auto" ;;
-esac
-
-case $remote_libraries in
-  off | no | false | 0) remote_libraries="false" ;;
-  *) remote_libraries="true" ;;
 esac
 
 # --- cmark-gfm ------------------------------------------------------------------
@@ -188,18 +181,73 @@ escape_html() {
 base_url="file://$(file_url_path "${folder%/}")/"
 
 # Only the page's own script, which carries this nonce, and the libraries it
-# loads may run; scripts written into the document are blocked. The host is
-# a fallback for browsers that predate 'strict-dynamic'.
+# loads may run; scripts written into the document are blocked.
 nonce=$(/usr/bin/od -An -N16 -tx1 /dev/urandom | /usr/bin/tr -d ' \n')
-script_sources="'nonce-$nonce' 'strict-dynamic'"
-if [[ $remote_libraries == true ]]; then
-  script_sources+=" https://cdn.jsdelivr.net"
-fi
 
-# Each document keeps one preview file, rewritten every time.
-cache="${TMPDIR:-/tmp}"
+# Each document keeps one preview file, rewritten every time, in your own
+# temporary folder. CotEditor sets TMPDIR; without it (under env -i or sudo),
+# ask macOS for the folder rather than use the shared /tmp.
+cache=${TMPDIR:-$(/usr/bin/getconf DARWIN_USER_TEMP_DIR 2>/dev/null || true)}
+cache="${cache:-/tmp}"
 cache="${cache%/}/coteditor-markdown-preview"
 mkdir -p -- "$cache"
+# The page runs the libraries copied here, so the folder must be yours.
+if [[ -L $cache || ! -d $cache || ! -O $cache ]]; then
+  report "$cache isn't a folder of yours, so the preview wasn't written there."
+fi
+
+# The libraries (Mermaid, KaTeX and its fonts, highlight.js, the emoji list)
+# are installed in _markdown-preview/lib. Browsers only let a file:// page
+# load fonts from its own folder or below, so they're copied next to the
+# previews, into a folder named after the versions in lib/manifest.txt. The
+# copy is checked every time, because macOS clears old temporary files. Only
+# that each file is there: hashing them on every preview would be slow, and a
+# copy is only ever renamed into place once it's complete. (The manifest's
+# format is described in tools/fetch-libraries.sh.)
+libraries_ready() {
+  local sum file
+  [[ -f "$1/manifest.txt" ]] || return 1
+  while read -r sum file; do
+    [[ -n $sum && -f "$1/$file" ]] || return 1
+  done < <(/usr/bin/sed '1,/^$/d' "$1/manifest.txt")
+}
+
+if ! libraries_ready "$support/lib"; then
+  report "Some of the libraries for diagrams, math and highlighting are missing from $support/lib. Reinstalling Markdown Preview restores them." \
+    "$INSTALL_COMMAND"
+fi
+lib_key=$(/usr/bin/cksum < "$support/lib/manifest.txt")
+lib="$cache/lib-${lib_key%% *}"
+if ! libraries_ready "$lib"; then
+  rm -rf -- "$lib.$$"
+  if ! cp -R -- "$support/lib" "$lib.$$"; then
+    rm -rf -- "$lib.$$"
+    report "The libraries couldn't be copied to $cache."
+  fi
+  # Another preview may be doing the same, so a step that fails here isn't an
+  # error as long as one complete copy ends up in place.
+  if libraries_ready "$lib"; then
+    # Another preview finished a copy first, and its page may be loading from
+    # it, so keep that one.
+    rm -rf -- "$lib.$$" 2>/dev/null || true
+  else
+    rm -rf -- "$lib" 2>/dev/null || true
+    # If another preview put a copy there just now, mv moves this one inside it.
+    mv -- "$lib.$$" "$lib" 2>/dev/null || true
+    rm -rf -- "$lib.$$" "$lib/${lib##*/}.$$" 2>/dev/null || true
+    libraries_ready "$lib" || report "The libraries couldn't be copied to $cache."
+  fi
+  # Copies for other versions. Names with a dot are copies still in progress.
+  for old in "$cache"/lib-*; do
+    old_name=${old##*/}
+    if [[ $old != "$lib" && $old_name != *.* ]]; then
+      rm -rf -- "$old" 2>/dev/null || true
+    fi
+  done
+fi
+# Percent-encoded, so it's also safe inside the JSON settings below.
+library_url="file://$(file_url_path "$lib")/"
+
 key=$(printf '%s' "${document:-untitled}" | /usr/bin/cksum)
 output="$cache/preview-${key%% *}.html"
 partial="$output.$$"
@@ -209,8 +257,8 @@ render() {
   printf '<!doctype html>\n<html lang="en" data-theme="%s" class="math-pending">\n<head>\n' "$theme"
   printf '<meta charset="utf-8">\n'
   printf '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
-  printf '<meta http-equiv="Content-Security-Policy" content="script-src %s; object-src '"'none'"'">\n' \
-    "$script_sources"
+  printf '<meta http-equiv="Content-Security-Policy" content="script-src '"'nonce-%s' 'strict-dynamic'"'; object-src '"'none'"'">\n' \
+    "$nonce"
   printf '<base href="%s">\n' "$base_url"
   printf '<title>%s</title>\n' "$(escape_html "$name")"
   printf '<style>\n'
@@ -219,8 +267,8 @@ render() {
     cat -- "$support/custom.css" || return 1
   fi
   printf '</style>\n'
-  printf '<script type="application/json" id="preview-settings">{"remoteLibraries": %s, "version": "%s"}</script>\n' \
-    "$remote_libraries" "$VERSION"
+  printf '<script type="application/json" id="preview-settings">{"libraries": "%s", "version": "%s"}</script>\n' \
+    "$library_url" "$VERSION"
   printf '</head>\n<body>\n<main class="page">\n<article class="markdown-body" id="content">\n'
   LC_ALL=C /usr/bin/awk -f "$support/prepare.awk" | "$cmark" "${cmark_options[@]}" || return 1
   printf '</article>\n</main>\n<script nonce="%s">\n' "$nonce"

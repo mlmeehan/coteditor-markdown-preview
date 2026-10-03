@@ -7,70 +7,30 @@
 (() => {
   "use strict";
 
-  // Libraries are fetched from jsDelivr only when a document needs them. Each
-  // version is pinned and verified with Subresource Integrity. To upgrade one,
-  // change its version and replace the hash with the output of
-  //   curl -sL URL | openssl dgst -sha384 -binary | openssl base64 -A
-  // or run tests/check-sri.sh, which verifies every pinned file.
-  // (Mermaid stays on 11.x: 12.0 changed the default layout and theme.)
-  const CDN = "https://cdn.jsdelivr.net/npm/";
+  // Libraries load only when a document needs them, from the "lib" folder
+  // installed next to this file (the preview script copies it next to the
+  // page). Nothing is fetched from the internet. Versions are pinned in
+  // tools/fetch-libraries.sh, which builds that folder.
   const LIBRARIES = {
-    katexStyle: [
-      CDN + "katex@0.18.9/dist/katex.min.css",
-      "sha384-lPx0C4zIUZLpveABMwOFcFeGZwsvKBJfhJ85FN1PYOV7xApBcFMhcAEMVKF8loOI",
-    ],
-    katex: [
-      CDN + "katex@0.18.9/dist/katex.min.js",
-      "sha384-19KE2cFb3U+RUWmyhBz7aLOGDG8WrRC6hE3oY/HTZZlAAVWYTdmvLC//+TIV3zUx",
-    ],
-    mermaid: [
-      CDN + "mermaid@11.17.2/dist/mermaid.min.js",
-      "sha384-EOXBFmc3gx5mb+vn0vPvvGqACToJD24hhacX5Yx+8NUUQrHIle/Qi5Bg9o3zKwW2",
-    ],
-    highlight: [
-      CDN + "@highlightjs/cdn-assets@11.12.0/highlight.min.js",
-      "sha384-wjfDDhOPPdjtva8vWBhWeVprSpmxisEu5aYT3q1JyACqXpdKpo3PWZTMVq24MBix",
-    ],
-    emoji: [
-      CDN + "markdown-it-emoji@3.1.0/lib/data/full.mjs",
-      "sha384-wwQRHq092eQemme/CF+kSbi9gUqvN6UBxC+n5+ikHQpsHE8z3AQ79SZ9oC56427/",
-    ],
+    katexStyle: "katex/katex.min.css",
+    katex: "katex/katex.min.js",
+    mermaid: "mermaid/mermaid.min.js",
+    highlight: "highlight/highlight.min.js",
+    emoji: "emoji/emoji.js",
   };
 
   // highlight.js's common bundle covers bash, c, cpp, csharp, css, diff, go,
   // graphql, ini/toml, java, javascript, json, kotlin, less, lua, makefile,
   // markdown, objectivec, perl, php, python, r, ruby, rust, scss, shell, sql,
-  // swift, typescript, vbnet, wasm, xml/html and yaml. These load on demand:
-  const GRAMMAR_URL = CDN + "@highlightjs/cdn-assets@11.12.0/languages/";
-  const GRAMMARS = {
-    apache: "sha384-QraNZk4EDfTVeWmClFLg5BZNVnDF8kF6L0wgGHxg201ohjeXkPbNzC5dzdpjxdnB",
-    applescript: "sha384-sHEGnomo/lWUBg5I8TICidwswwIA/xv83CJu2P5EPOeM/GouFNz0DqApK1rXyR+X",
-    awk: "sha384-fMmTpnt13E+OHdNVNrGGh8dQn7suHkyJqXK3gZHJc/JbDk9QTmpo4l8lmxduLuT3",
-    clojure: "sha384-5FYEb05i3NG1q8w76Ak5/2HAiF2Yw1428YR0YbS1mezlHl8HPolqt7RR7Ob8Pzoa",
-    cmake: "sha384-2+d+VUsqaxDE3yoeRJxqWmX1dF5Ongwq0zKRb+NmBsIQXlRr0GTQOkDDD6eujd4k",
-    dart: "sha384-m692RDTeyWok7r6KORdic5N2fD4sqVvyPrwZsS1U6CKcx7d3Kw88TvlMnSVPIFba",
-    dockerfile: "sha384-/zu1pI8+9j/v/qNlCRRyidiBhGdxfvGwOLXEPBXpKc77eFNUAhccr0WglEQ+x9La",
-    dos: "sha384-OP6ey9zMpJWPVgF9AGbxxfHDX5xCrPeJuM9x1nAZXFMNjzNz3xOUrRtphSL+N3h3",
-    elixir: "sha384-rSOGzFmdaGExhx6WbibC/dE+Pdl0aqugcyUKj5yiT2Gxf4BQVIKdL0bwry1c31Ux",
-    erlang: "sha384-nQ2ULvfpV6vH0atPFJwG6BJgCeCt9Pg1Nx1EnsJELoO2u7D3hfyDPgLOtxHtPA+w",
-    fsharp: "sha384-497P//su89C+0b52jLnsXDpvjDqVAcOCeeVpH8tF2ZoPawmI9zMcV7immAWa31Ou",
-    gradle: "sha384-ZMf1TkmgwGuFpXWyanMnGiBQS/hdqUrJkNZfPm3GZ/CGypwNzesT3EX03iY30WN5",
-    groovy: "sha384-T3pAOCMtlhvbttiHMLES5r/LSOZUGYphLrWRjZt+2XskLDHrwjQQzJShJanN1D2Q",
-    haskell: "sha384-L8WB9gHpfiTBWE1ygjEnc4V2QF5dazO17LzcqDfOFEmJeRo5udFESxWTuGIlURhX",
-    http: "sha384-L0lAPMci4/TxXazgm0dJIgX9udJzIJf78sk4o9v5sYuRVYJSjymFXF13LmyCU3L0",
-    julia: "sha384-v2gCXTWc4kL+pNpB1AA9sem3usnVLY2uTl7/sWrQpMYl4FKFUECFCrHFo8WNPz43",
-    latex: "sha384-wHW9Hcxw0oenHF2z8fGo1rhAe1jZwnp35Z6xzC29Vj/O+toSfBY9+7TrUfUnwFMD",
-    matlab: "sha384-bzbYzqp5kO+6yS3NUZAEd8SfG2UtZyk9yuhsZ9233T1+Cps0iE9rEW2fQ1IaeMfw",
-    nginx: "sha384-fTqzvE/t2lypa5UdKpG8P3qlAUy1xlle9ZtJj8r+9V9aRP/ePjUW7IWAHlU8phrY",
-    nix: "sha384-9VYvb3RrbMDUx+Q/q8C9UVFF8yptNO5ShBGaKg11bpzI6hfy3G8cEQ7m1zciLjR5",
-    ocaml: "sha384-74s/hsaCRSaXFO4K7hl5vtCAx390VPb1iovzm5RrDuHzsbD78KWUJAVtny1kKcfi",
-    pgsql: "sha384-9rdIc+nt3LnsQUdyROz7e1pHsM27CXAhtRaGo0AhyHxGCsSCRLE64xeMNrpcASNy",
-    powershell: "sha384-jigawbLJjSW9uklht6/lvMBC7b00t25Id0RQW+qORcsF6B+LARvlTLfzyIaNolYG",
-    properties: "sha384-xHbFPM8P0rCZ1js6aFBqwyDdUMK35/FEbVS6ZSdPtDjssqs17QJ2/M9kWJJUbm3D",
-    protobuf: "sha384-+0RAXIR4LRTtbuX1B+TJHkhS4Id4ro/sNetpSgoMpx4Q8gR/sadGTftPY3PcIi2U",
-    scala: "sha384-VG8NRHHYMlILj7B8QIlb/1n4TKGng3TJrMaQMl9nzBwjaDyItiwrn73r4C5UKCIa",
-    vim: "sha384-DTGwkXgxP7GFYuQl4t3iMY6owPfm43tBw2AH4LerV9I5DFgSRSDzAueQvoSykx2S",
-  };
+  // swift, typescript, vbnet, wasm, xml/html and yaml. These load on demand.
+  // tools/fetch-libraries.sh reads this list to decide which grammars to
+  // install, so keep it to quoted names inside `new Set([` ... `]);`:
+  const GRAMMARS = new Set([
+    "apache", "applescript", "awk", "clojure", "cmake", "dart", "dockerfile", "dos",
+    "elixir", "erlang", "fsharp", "gradle", "groovy", "haskell", "http", "julia",
+    "latex", "matlab", "nginx", "nix", "ocaml", "pgsql", "powershell", "properties",
+    "protobuf", "scala", "vim",
+  ]);
   const GRAMMAR_ALIASES = {
     apacheconf: "apache", bat: "dos", batch: "dos", clj: "clojure", cmd: "dos",
     docker: "dockerfile", edn: "clojure", erl: "erlang", ex: "elixir", exs: "elixir",
@@ -125,8 +85,11 @@
 
   const pending = new Map();
 
-  // Adds a script or stylesheet once and resolves when it has loaded.
-  function load([url, integrity], kind = "script") {
+  // Adds a script or stylesheet from the lib folder once and resolves when it
+  // has loaded.
+  function load(file, kind = "script") {
+    if (!settings.libraries) return Promise.reject(new Error("The lib folder isn't installed"));
+    const url = settings.libraries + file;
     if (!pending.has(url)) {
       pending.set(url, new Promise((resolve, reject) => {
         const element = document.createElement(kind === "style" ? "link" : "script");
@@ -136,9 +99,6 @@
         } else {
           element.src = url;
         }
-        element.integrity = integrity;
-        element.crossOrigin = "anonymous";
-        element.referrerPolicy = "no-referrer";
         element.addEventListener("load", () => resolve(), { once: true });
         element.addEventListener("error", () => reject(new Error(`Could not load ${url}`)), { once: true });
         document.head.append(element);
@@ -503,7 +463,6 @@
   // its source text in place.
 
   async function renderEmoji() {
-    if (!settings.remoteLibraries) return;
     const pattern = /:([a-z0-9_+-]+):/g;
     const nodes = [];
     const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
@@ -516,11 +475,8 @@
     }
     if (!nodes.length) return;
 
-    const [url, integrity] = LIBRARIES.emoji;
-    const response = await fetch(url, { integrity, mode: "cors", credentials: "omit", referrerPolicy: "no-referrer" });
-    if (!response.ok) throw new Error(`Could not load ${url}`);
-    const source = await response.text();
-    const table = JSON.parse(source.slice(source.indexOf("{")));
+    await load(LIBRARIES.emoji);
+    const table = window.markdownPreviewEmoji;
     for (const node of nodes) {
       node.data = node.data.replace(pattern, (text, name) => (hasOwn(table, name) ? table[name] : text));
     }
@@ -529,7 +485,7 @@
   async function renderMath() {
     try {
       const targets = Array.from(content.querySelectorAll(".md-math"));
-      if (!targets.length || !settings.remoteLibraries) return;
+      if (!targets.length) return;
       await Promise.all([load(LIBRARIES.katexStyle, "style"), load(LIBRARIES.katex)]);
       const macros = {};
       for (const element of targets) {
@@ -550,18 +506,12 @@
 
   async function renderDiagrams(diagrams) {
     if (!diagrams.length) return;
-    if (!settings.remoteLibraries) {
-      for (const diagram of diagrams) {
-        showDiagramNote(diagram, "Diagrams are turned off (remote_libraries = off).", "is-info");
-      }
-      return;
-    }
 
     try {
       await load(LIBRARIES.mermaid);
     } catch (error) {
       for (const diagram of diagrams) {
-        showDiagramNote(diagram, "Mermaid could not be loaded, so the diagram source is shown instead.");
+        showDiagramNote(diagram, "Mermaid could not be loaded, so the diagram source is shown instead. Reinstalling Markdown Preview restores it.");
       }
       throw error;
     }
@@ -605,16 +555,16 @@
     }
   }
 
-  function showDiagramNote(diagram, message, variant = "") {
+  function showDiagramNote(diagram, message) {
     const note = document.createElement("div");
-    note.className = `diagram-note ${variant}`.trim();
+    note.className = "diagram-note";
     note.textContent = message;
     diagram.figure.className = "diagram has-note";
     diagram.figure.replaceChildren(note, diagram.pre);
   }
 
   async function highlightCode(blocks) {
-    if (!blocks.length || !settings.remoteLibraries) return;
+    if (!blocks.length) return;
     await load(LIBRARIES.highlight);
     const hljs = window.hljs;
 
@@ -622,10 +572,10 @@
     for (const { language } of blocks) {
       if (hljs.getLanguage(language)) continue;
       const name = hasOwn(GRAMMAR_ALIASES, language) ? GRAMMAR_ALIASES[language] : language;
-      if (hasOwn(GRAMMARS, name)) grammars.add(name);
+      if (GRAMMARS.has(name)) grammars.add(name);
     }
     await Promise.allSettled(
-      Array.from(grammars, (name) => load([GRAMMAR_URL + name + ".min.js", GRAMMARS[name]]))
+      Array.from(grammars, (name) => load(`highlight/languages/${name}.min.js`))
     );
 
     for (const { code, language } of blocks) {

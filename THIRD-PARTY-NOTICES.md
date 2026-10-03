@@ -30,15 +30,35 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## Used at run time, not included
+## Browser libraries included in releases
 
-These are installed separately or loaded by your browser when a document needs
-them. Each keeps its own license.
+Releases include these libraries in `_markdown-preview/lib`, unmodified except
+as noted, so previews work offline. Each folder holds the library's license
+file, which applies to the files in it.
+
+| Project | Version | Used for | License | License file |
+| --- | --- | --- | --- | --- |
+| [KaTeX](https://katex.org) | 0.18.9 | Math | MIT | `lib/katex/LICENSE` |
+| KaTeX fonts | 0.18.9 | Math | SIL Open Font License 1.1 | `lib/katex/fonts/OFL.txt` |
+| [Mermaid](https://mermaid.js.org) | 11.17.2 | Diagrams | MIT | `lib/mermaid/LICENSE` |
+| [highlight.js](https://highlightjs.org) | 11.12.0 | Syntax highlighting | BSD-3-Clause | `lib/highlight/LICENSE` |
+| [markdown-it-emoji](https://github.com/markdown-it/markdown-it-emoji) | 3.1.0 | The emoji shortcode list | MIT | `lib/emoji/LICENSE` |
+
+- The KaTeX fonts are Copyright (c) 2009-2010 Design Science, Inc. and
+  Copyright (c) 2014-2018 Khan Academy, with Reserved Font Names KaTeX_AMS,
+  KaTeX_Caligraphic, KaTeX_Fraktur, KaTeX_Main, KaTeX_Math, KaTeX_SansSerif,
+  KaTeX_Script, KaTeX_Size1-4 and KaTeX_Typewriter. They are included
+  unmodified and are not sold on their own.
+- `mermaid.min.js` bundles other open-source packages. Their names, versions,
+  licenses and copyright notices are in `lib/mermaid/BUNDLED-LICENSES.txt`.
+  DOMPurify, offered under MPL-2.0 or Apache-2.0, is used under Apache-2.0.
+- Only the highlight.js grammars the preview uses are included.
+- The emoji list is the package's `lib/data/full.mjs` from markdown-it-emoji,
+  with `export default` changed to an assignment to
+  `window.markdownPreviewEmoji` so that a page opened from a file can load it.
+
+## Installed separately
 
 | Project | Used for | License |
 | --- | --- | --- |
 | [cmark-gfm](https://github.com/github/cmark-gfm) | Rendering Markdown | BSD-2-Clause |
-| [KaTeX](https://katex.org) | Math | MIT |
-| [Mermaid](https://mermaid.js.org) | Diagrams | MIT |
-| [highlight.js](https://highlightjs.org) | Syntax highlighting | BSD-3-Clause |
-| [markdown-it-emoji](https://github.com/markdown-it/markdown-it-emoji) | The emoji shortcode list | MIT |

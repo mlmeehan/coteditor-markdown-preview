@@ -86,10 +86,6 @@ browser = Safari
 
 # auto follows macOS; light or dark always use that appearance.
 theme = auto
-
-# Set to off to stop loading the diagram, math and highlighting libraries
-# from the internet (see Privacy below).
-remote_libraries = on
 ```
 
 **Your own styles:** create `custom.css` in the same folder. It's added after the built-in styles, and updates never touch it. For example, `body { font-size: 19px; }` or `.page { max-width: 64rem; }`.
@@ -120,13 +116,13 @@ Add an option after ` -- ` for the rest:
 
 ## Troubleshooting
 
-Start with the doctor command above: it checks CotEditor, the script, cmark-gfm, your settings and the network, then renders a test page. The most common fixes:
+Start with the doctor command above: it checks CotEditor, the script, cmark-gfm, the libraries, your settings, then renders a test page. The most common fixes:
 
 - **Nothing in the Script menu:** the script must be in the Scripts folder itself, with a name ending in `.sh`. Reinstalling puts it back.
 - **"…can't be executed because you don't have permission":** the script lost its executable flag. Reinstalling fixes it.
 - **⇧⌘M does nothing, but the menu item works:** another script or command uses the same shortcut. The installer and doctor point out clashing scripts; a menu shortcut you set in CotEditor's *Settings ▸ Shortcuts* (*Key Bindings* in older versions) or in macOS's *Keyboard Shortcuts* also takes precedence.
 - **"It needs cmark-gfm":** run `brew install cmark-gfm`.
-- **Diagrams, math or highlighting show as plain text:** the page couldn't reach cdn.jsdelivr.net, or `remote_libraries = off` is set.
+- **Diagrams, math or highlighting show as plain text:** the libraries in `_markdown-preview/lib` are missing or damaged. Reinstalling restores them.
 - **Something else:** CotEditor's **Window ▸ Console** shows any error the script reported.
 
 The [troubleshooting guide](docs/troubleshooting.md) covers these and more in detail.
@@ -134,8 +130,8 @@ The [troubleshooting guide](docs/troubleshooting.md) covers these and more in de
 ## Privacy and security
 
 - Your document is converted on your Mac, and the preview is a file in your temporary folder. Nothing is uploaded.
-- When a document contains diagrams, math, code or emoji, the page loads Mermaid, KaTeX, highlight.js and an emoji list from [jsDelivr](https://www.jsdelivr.com). Every script and stylesheet is pinned to an exact version and checked with [Subresource Integrity](https://developer.mozilla.org/docs/Web/Security/Subresource_Integrity); the fonts KaTeX's stylesheet loads come from the same pinned version. After the first load, your browser serves them from its cache. Set `remote_libraries = off` to stop loading them.
-- Images and other files a document links to on the web load as they would in any browser, whatever the settings.
+- Mermaid, KaTeX and its fonts, highlight.js and the emoji list are installed with Markdown Preview, so previews need no internet connection. Pinned versions are downloaded from npm when a release is built, checked against their hashes, and packaged with it; the installer checks the package against its published checksum.
+- Images and other files a document links to on the web load as they would in any browser.
 - Raw HTML in a document is rendered, but scripts inside the document are blocked by the page's Content Security Policy, as on GitHub.
 
 ## How it works
