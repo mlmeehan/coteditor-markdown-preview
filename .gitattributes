@@ -1,0 +1,4 @@
+* text=auto eol=lf
+*.png binary
+# This fixture tests Windows line endings, so keep them.
+tests/prepare/crlf.md -text

@@ -1,0 +1,719 @@
+/*
+ * preview.css - the look of Markdown Preview for CotEditor (MIT License).
+ *
+ * Every color is a light/dark pair, so the page follows the macOS appearance
+ * unless "theme" is set in the config file. To change anything, put your own
+ * rules in custom.css next to this file; it is loaded after this one and is
+ * never touched by updates.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  --canvas: light-dark(#ffffff, #0e1116);
+  --text: light-dark(#1f2328, #e3e7ec);
+  --muted: light-dark(#5b636e, #99a2ad);
+  --border: light-dark(#d4dae1, #343a43);
+  --border-subtle: light-dark(#e6eaef, #252a31);
+  --surface: light-dark(#f5f7f9, #161b22);
+  --surface-raised: light-dark(#eaeef2, #1f252d);
+  --link: light-dark(#0b65cf, #5aa7ff);
+  --mark: light-dark(#fff3b0, #4a3c05);
+  --target: light-dark(#dff1ff, #11283f);
+
+  --note: light-dark(#0969da, #4493f8);
+  --tip: light-dark(#1a7f37, #3fb950);
+  --important: light-dark(#8250df, #ab7df8);
+  --warning: light-dark(#9a6700, #d29922);
+  --caution: light-dark(#d1242f, #f85149);
+
+  --syntax-keyword: light-dark(#cf222e, #ff7b72);
+  --syntax-entity: light-dark(#8250df, #d2a8ff);
+  --syntax-constant: light-dark(#0550ae, #79c0ff);
+  --syntax-string: light-dark(#0a3069, #a5d6ff);
+  --syntax-variable: light-dark(#953800, #ffa657);
+  --syntax-comment: light-dark(#6e7781, #8b949e);
+  --syntax-tag: light-dark(#116329, #7ee787);
+  --syntax-inserted: light-dark(#116329, #aff5b4);
+  --syntax-inserted-bg: light-dark(#dafbe1, #033a16);
+  --syntax-deleted: light-dark(#82071e, #ffdcd7);
+  --syntax-deleted-bg: light-dark(#ffebe9, #67060c);
+
+  --font-text: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-code: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono",
+    monospace;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--text);
+  font-family: var(--font-text);
+  font-size: 17px;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--link) 25%, transparent);
+}
+
+.page {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 3rem 2.5rem 5rem;
+}
+
+/* Spacing ---------------------------------------------------------------- */
+
+.markdown-body > :first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-body > :last-child {
+  margin-bottom: 0 !important;
+}
+
+/* :where() keeps this at the lowest specificity so the rules below win. */
+.markdown-body :where(p, blockquote, ul, ol, dl, table, pre, details, .code-block, .diagram,
+    .markdown-alert, .toc) {
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+/* Headings ---------------------------------------------------------------- */
+
+.markdown-body :is(h1, h2, h3, h4, h5, h6) {
+  margin: 1.5rem 0 1rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.markdown-body h1 {
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 2em;
+}
+
+.markdown-body h2 {
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 1.5em;
+}
+
+.markdown-body h3 {
+  font-size: 1.25em;
+}
+
+.markdown-body h4 {
+  font-size: 1em;
+}
+
+.markdown-body h5 {
+  font-size: 0.9em;
+}
+
+.markdown-body h6 {
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+.heading-anchor {
+  margin-left: 0.35em;
+  color: var(--muted) !important;
+  font-weight: 400;
+  text-decoration: none !important;
+  visibility: hidden;
+}
+
+:is(h1, h2, h3, h4, h5, h6):hover > .heading-anchor,
+.heading-anchor:focus-visible {
+  visibility: visible;
+}
+
+/* Text --------------------------------------------------------------------- */
+
+.markdown-body a {
+  color: var(--link);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 0.2em;
+}
+
+.markdown-body a:hover {
+  text-decoration-color: currentColor;
+}
+
+.markdown-body :is(strong, b) {
+  font-weight: 650;
+}
+
+.markdown-body :is(sup, sub) {
+  line-height: 0;
+}
+
+.markdown-body mark {
+  padding: 0 0.15em;
+  border-radius: 3px;
+  background: var(--mark);
+  color: inherit;
+}
+
+.markdown-body :is(code, kbd, samp, pre) {
+  font-family: var(--font-code);
+}
+
+.markdown-body :not(pre) > code {
+  padding: 0.15em 0.4em;
+  border-radius: 6px;
+  background: var(--surface-raised);
+  font-size: 0.85em;
+}
+
+.markdown-body kbd {
+  display: inline-block;
+  padding: 0.15em 0.4em;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: inset 0 -1px 0 var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.75em;
+  line-height: 1.3;
+  vertical-align: middle;
+}
+
+/* Lists -------------------------------------------------------------------- */
+
+.markdown-body :is(ul, ol) {
+  padding-left: 2em;
+}
+
+.markdown-body li + li {
+  margin-top: 0.25em;
+}
+
+.markdown-body li > :is(ul, ol) {
+  margin-top: 0.25em;
+  margin-bottom: 0;
+}
+
+.markdown-body li > p {
+  margin-top: 0.75em;
+}
+
+.markdown-body .task-list-item {
+  list-style: none;
+}
+
+.task-list-item input[type="checkbox"] {
+  display: inline-grid;
+  place-content: center;
+  width: 1em;
+  height: 1em;
+  margin: 0 0.45em 0.2em -1.45em;
+  border: 1.5px solid var(--muted);
+  border-radius: 4px;
+  background: var(--canvas);
+  font: inherit;
+  vertical-align: middle;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.task-list-item input[type="checkbox"]:checked {
+  border-color: var(--link);
+  background: var(--link);
+}
+
+.task-list-item input[type="checkbox"]:checked::after {
+  content: "";
+  width: 0.28em;
+  height: 0.55em;
+  border: solid var(--canvas);
+  border-width: 0 0.13em 0.13em 0;
+  transform: translateY(-0.06em) rotate(45deg);
+}
+
+.markdown-body dt {
+  margin-top: 1em;
+  font-weight: 650;
+}
+
+.markdown-body dd {
+  margin: 0.25em 0 0 1.5em;
+}
+
+/* Quotes and alerts ---------------------------------------------------------- */
+
+.markdown-body blockquote {
+  padding: 0 1em;
+  border-left: 0.25em solid var(--border);
+  color: var(--muted);
+}
+
+.markdown-body :is(blockquote, .markdown-alert) > :first-child {
+  margin-top: 0;
+}
+
+.markdown-body :is(blockquote, .markdown-alert) > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-alert {
+  padding: 0.5em 1em;
+  border-left: 0.25em solid var(--alert);
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-bottom: 0.25em;
+  color: var(--alert);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.markdown-alert-title svg {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+}
+
+.markdown-alert-note {
+  --alert: var(--note);
+}
+
+.markdown-alert-tip {
+  --alert: var(--tip);
+}
+
+.markdown-alert-important {
+  --alert: var(--important);
+}
+
+.markdown-alert-warning {
+  --alert: var(--warning);
+}
+
+.markdown-alert-caution {
+  --alert: var(--caution);
+}
+
+/* Code blocks ----------------------------------------------------------------- */
+
+.markdown-body pre {
+  padding: 1em 1.1em;
+  overflow: auto;
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 0.85em;
+  line-height: 1.5;
+  tab-size: 4;
+}
+
+.markdown-body pre code {
+  padding: 0;
+  background: none;
+  font-size: 1em;
+  white-space: pre;
+}
+
+.code-block {
+  position: relative;
+}
+
+.code-block > pre {
+  margin: 0;
+}
+
+.code-toolbar {
+  position: absolute;
+  top: 0.45em;
+  right: 0.45em;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.code-block:hover .code-toolbar,
+.code-toolbar:focus-within {
+  opacity: 1;
+}
+
+.code-language {
+  color: var(--muted);
+  font: 0.7rem/1 var(--font-code);
+  letter-spacing: 0.02em;
+}
+
+.code-copy {
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--canvas);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.code-copy:hover {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.code-copy svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.code-copy[data-copied] {
+  color: var(--tip);
+}
+
+@media (hover: none) {
+  .code-toolbar {
+    opacity: 1;
+  }
+}
+
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  color: var(--syntax-keyword);
+}
+
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  color: var(--syntax-entity);
+}
+
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-variable {
+  color: var(--syntax-constant);
+}
+
+.hljs-meta .hljs-string,
+.hljs-regexp,
+.hljs-string {
+  color: var(--syntax-string);
+}
+
+.hljs-built_in,
+.hljs-bullet,
+.hljs-symbol {
+  color: var(--syntax-variable);
+}
+
+.hljs-code,
+.hljs-comment,
+.hljs-formula {
+  color: var(--syntax-comment);
+}
+
+.hljs-name,
+.hljs-quote,
+.hljs-selector-pseudo,
+.hljs-selector-tag {
+  color: var(--syntax-tag);
+}
+
+.hljs-section {
+  color: var(--syntax-constant);
+  font-weight: 650;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: 650;
+}
+
+.hljs-addition {
+  background: var(--syntax-inserted-bg);
+  color: var(--syntax-inserted);
+}
+
+.hljs-deletion {
+  background: var(--syntax-deleted-bg);
+  color: var(--syntax-deleted);
+}
+
+/* Tables, images and rules ----------------------------------------------------- */
+
+.markdown-body table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
+  border-spacing: 0;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.markdown-body :is(th, td) {
+  padding: 0.4em 0.8em;
+  border: 1px solid var(--border);
+}
+
+.markdown-body th {
+  font-weight: 600;
+}
+
+.markdown-body th:not([align]) {
+  text-align: start;
+}
+
+.markdown-body tbody tr:nth-child(2n) {
+  background: var(--surface);
+}
+
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+  vertical-align: middle;
+}
+
+.markdown-body p.figure {
+  text-align: center;
+}
+
+.markdown-body p.figure img {
+  display: block;
+  margin: 0.5em auto;
+  border-radius: 6px;
+}
+
+.markdown-body hr {
+  height: 0.25em;
+  margin: 1.5em 0;
+  padding: 0;
+  border: 0;
+  background: var(--border-subtle);
+}
+
+.markdown-body details > summary {
+  cursor: pointer;
+}
+
+.markdown-body details[open] > summary {
+  margin-bottom: 0.5em;
+}
+
+/* Front matter, table of contents, footnotes ------------------------------------ */
+
+.markdown-body .front-matter {
+  margin-bottom: 1.5em;
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+.front-matter > summary {
+  font-weight: 600;
+}
+
+.front-matter .code-block {
+  margin: 0.5em 0 0;
+}
+
+.toc {
+  padding: 0.75em 1.25em;
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 0.95em;
+}
+
+.toc-title {
+  margin: 0 0 0.25em;
+  font-weight: 650;
+}
+
+.markdown-body .toc ul {
+  margin: 0;
+  padding-left: 1.25em;
+}
+
+.markdown-body .toc a {
+  text-decoration: none;
+}
+
+.footnotes {
+  margin-top: 2.5em;
+  padding-top: 1em;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--muted);
+  font-size: 0.875em;
+}
+
+.markdown-body .footnotes ol {
+  padding-left: 1.5em;
+}
+
+.markdown-body .footnotes p {
+  margin: 0.25em 0;
+}
+
+.markdown-body :is(.footnote-ref a, .footnote-backref) {
+  text-decoration: none;
+}
+
+:target {
+  scroll-margin-top: 1.5rem;
+}
+
+.footnotes li:target,
+.footnote-ref a:target {
+  border-radius: 4px;
+  background: var(--target);
+}
+
+/* Math and diagrams -------------------------------------------------------------- */
+
+.md-math[data-mode="block"] {
+  display: block;
+}
+
+.md-math:empty::before {
+  content: "$" attr(data-tex) "$";
+  color: var(--muted);
+  font-family: var(--font-code);
+  font-size: 0.85em;
+}
+
+.md-math[data-mode="block"]:empty::before {
+  content: "$$" attr(data-tex) "$$";
+  white-space: pre-wrap;
+}
+
+.math-pending .md-math:empty::before {
+  visibility: hidden;
+}
+
+.katex-display {
+  margin: 0.75em 0;
+  padding: 0.1em 0;
+  overflow: auto hidden;
+}
+
+.diagram {
+  overflow-x: auto;
+  text-align: center;
+}
+
+.diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.diagram > pre {
+  margin: 0;
+  text-align: start;
+}
+
+.diagram.is-pending > pre {
+  visibility: hidden;
+}
+
+.diagram-note {
+  margin-bottom: 0.5em;
+  padding: 0.5em 0.8em;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--caution) 9%, transparent);
+  color: var(--caution);
+  font: 0.75rem/1.5 var(--font-code);
+  text-align: start;
+  white-space: pre-wrap;
+}
+
+.diagram-note.is-info {
+  background: var(--surface);
+  color: var(--muted);
+}
+
+/* Small screens and printing ------------------------------------------------------ */
+
+@media (max-width: 600px) {
+  body {
+    font-size: 16px;
+  }
+
+  .page {
+    padding: 1.5rem 1rem 3rem;
+  }
+}
+
+@media print {
+  :root,
+  :root[data-theme] {
+    color-scheme: light;
+  }
+
+  body {
+    font-size: 11pt;
+  }
+
+  .page {
+    max-width: none;
+    padding: 0;
+  }
+
+  .heading-anchor,
+  .code-toolbar {
+    display: none !important;
+  }
+
+  .markdown-body a {
+    color: inherit;
+  }
+
+  .markdown-body :is(pre, blockquote, table, img, .markdown-alert, .diagram, .katex-display) {
+    break-inside: avoid;
+  }
+
+  .markdown-body :is(h1, h2, h3, h4, h5, h6) {
+    break-after: avoid;
+  }
+
+  .diagram[data-theme="dark"] svg {
+    filter: invert(1) hue-rotate(180deg);
+  }
+}

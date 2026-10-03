@@ -1,0 +1,12 @@
+{
+  "name": "coteditor-markdown-preview-browser-tests",
+  "private": true,
+  "type": "module",
+  "description": "Renders the feature tour with the preview script and checks it in Chromium and WebKit.",
+  "scripts": {
+    "test": "node render.test.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

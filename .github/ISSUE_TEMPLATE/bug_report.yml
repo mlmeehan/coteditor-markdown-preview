@@ -1,0 +1,52 @@
+name: Bug report
+description: Something doesn't install, run or render the way it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. Please run the doctor in Terminal first and paste what it prints below; it answers most of the questions we'd ask:
+
+        ```sh
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mlmeehan/coteditor-markdown-preview/main/install.sh)" -- --doctor
+        ```
+
+        The [troubleshooting guide](https://github.com/mlmeehan/coteditor-markdown-preview/blob/main/docs/troubleshooting.md) covers the most common problems.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: What did you expect to see, and what did you see instead? Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: markdown
+    attributes:
+      label: Markdown that shows the problem
+      description: The smallest piece of Markdown that reproduces it, if it's about rendering.
+      render: markdown
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Doctor output
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: CotEditor Console messages
+      description: Anything shown in CotEditor's Console (Window ▸ Console) when you ran the preview.
+      render: text
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Safari
+        - Google Chrome
+        - Firefox
+        - Microsoft Edge
+        - Arc
+        - Brave
+        - Other

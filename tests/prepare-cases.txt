@@ -1,0 +1,352 @@
+# Test cases for src/_markdown-preview/prepare.awk, run by tests/test-prepare.sh.
+#
+# Each case is a line "%%% <name>", the Markdown input, a line "%%% expect",
+# then the expected output. Lines before the first case starting with # are
+# comments. Inputs and outputs end at the next "%%%" line.
+
+%%% inline
+$x$
+%%% expect
+<span class="md-math" data-mode="inline" data-tex="x"></span>
+%%% currency
+costs $5 and $10 today
+%%% expect
+costs $5 and $10 today
+%%% currency range
+$5-$10
+%%% expect
+$5-$10
+%%% space before closer aborts
+a $b $c$
+%%% expect
+a $b <span class="md-math" data-mode="inline" data-tex="c"></span>
+%%% escaped dollar
+\$x$ and \$5
+%%% expect
+\$x$ and \$5
+%%% escaped dollar inside math
+$a\$b$
+%%% expect
+<span class="md-math" data-mode="inline" data-tex="a\$b"></span>
+%%% code span
+`$x$` and $y$
+%%% expect
+`$x$` and <span class="md-math" data-mode="inline" data-tex="y"></span>
+%%% double backtick span
+``a ` $x$`` $y$
+%%% expect
+``a ` $x$`` <span class="md-math" data-mode="inline" data-tex="y"></span>
+%%% unclosed backticks
+`$x$
+%%% expect
+`<span class="md-math" data-mode="inline" data-tex="x"></span>
+%%% github code math
+$`x^2`$ and $y$
+%%% expect
+$`x^2`$ and <span class="md-math" data-mode="inline" data-tex="y"></span>
+%%% display inline
+text $$x^2$$ more
+%%% expect
+text <span class="md-math" data-mode="block" data-tex="x^2"></span> more
+%%% display empty
+$$$$
+%%% expect
+$$$$
+%%% space after opener
+$ x$
+%%% expect
+$ x$
+%%% space before closer
+$x $
+%%% expect
+$x $
+%%% two maths
+$a$ and $b$
+%%% expect
+<span class="md-math" data-mode="inline" data-tex="a"></span> and <span class="md-math" data-mode="inline" data-tex="b"></span>
+%%% punctuation
+($x$), *$y$*
+%%% expect
+(<span class="md-math" data-mode="inline" data-tex="x"></span>), *<span class="md-math" data-mode="inline" data-tex="y"></span>*
+%%% markdown specials kept
+$\{a_1 * b_2\} \\ |x|$
+%%% expect
+<span class="md-math" data-mode="inline" data-tex="\{a_1 * b_2\} \\ &#124;x&#124;"></span>
+%%% html escaping
+$a<b & "c"$
+%%% expect
+<span class="md-math" data-mode="inline" data-tex="a&lt;b &amp; &quot;c&quot;"></span>
+%%% table cell pipes
+| $|x|$ | y |
+%%% expect
+| <span class="md-math" data-mode="inline" data-tex="&#124;x&#124;"></span> | y |
+%%% html attribute
+<a title="$x$">$y$</a>
+%%% expect
+<a title="$x$"><span class="md-math" data-mode="inline" data-tex="y"></span></a>
+%%% autolink
+<https://x.com/$a$b> $c$
+%%% expect
+<https://x.com/$a$b> <span class="md-math" data-mode="inline" data-tex="c"></span>
+%%% html comment inline
+text <!-- $a$ --> $b$
+%%% expect
+text <!-- $a$ --> <span class="md-math" data-mode="inline" data-tex="b"></span>
+%%% html comment line is raw html
+<!-- $a$ --> $b$
+%%% expect
+<!-- $a$ --> $b$
+%%% less-than not a tag
+if a<b then $x$
+%%% expect
+if a<b then <span class="md-math" data-mode="inline" data-tex="x"></span>
+%%% link definition
+[ref]: http://x/$a$b
+%%% expect
+[ref]: http://x/$a$b
+%%% footnote definition
+[^1]: Note with $x$.
+%%% expect
+[^1]: Note with <span class="md-math" data-mode="inline" data-tex="x"></span>.
+%%% multi-line display
+$$
+\begin{aligned}
+a &= b \\
+c &= d
+\end{aligned}
+$$
+%%% expect
+<span class="md-math" data-mode="block" data-tex="&#10;\begin{aligned}&#10;a &amp;= b \\&#10;c &amp;= d&#10;\end{aligned}&#10;"></span>
+%%% multi-line with text
+See $$a +
+b$$ done.
+%%% expect
+See <span class="md-math" data-mode="block" data-tex="a +&#10;b"></span> done.
+%%% consecutive displays
+$$
+a
+$$
+$$
+b
+$$
+%%% expect
+<span class="md-math" data-mode="block" data-tex="&#10;a&#10;"></span>
+<span class="md-math" data-mode="block" data-tex="&#10;b&#10;"></span>
+%%% display then more on closing line
+$$
+a
+$$ and $b$
+%%% expect
+<span class="md-math" data-mode="block" data-tex="&#10;a&#10;"></span> and <span class="md-math" data-mode="inline" data-tex="b"></span>
+%%% unclosed display
+$$
+a
+
+b
+%%% expect
+$$
+a
+
+b
+%%% display across blank line
+$$
+a
+
+b
+$$
+%%% expect
+$$
+a
+
+b
+$$
+%%% quoted display
+> $$
+> x^2
+> $$
+%%% expect
+> <span class="md-math" data-mode="block" data-tex="&#10;x^2&#10;"></span>
+%%% list display
+- item
+  $$
+  x
+  $$
+%%% expect
+- item
+  <span class="md-math" data-mode="block" data-tex="&#10;  x&#10;  "></span>
+%%% fenced code
+```
+$x$
+```
+$y$
+%%% expect
+```
+$x$
+```
+<span class="md-math" data-mode="inline" data-tex="y"></span>
+%%% tilde fence
+~~~ js
+$x$
+```
+$y$
+~~~
+$z$
+%%% expect
+~~~ js
+$x$
+```
+$y$
+~~~
+<span class="md-math" data-mode="inline" data-tex="z"></span>
+%%% longer closing fence
+````
+```
+$x$
+````
+$y$
+%%% expect
+````
+```
+$x$
+````
+<span class="md-math" data-mode="inline" data-tex="y"></span>
+%%% fence in list
+- ```sh
+  echo $a$b
+  ```
+$y$
+%%% expect
+- ```sh
+  echo $a$b
+  ```
+<span class="md-math" data-mode="inline" data-tex="y"></span>
+%%% fence in quote
+> ```
+> $x$
+> ```
+$y$
+%%% expect
+> ```
+> $x$
+> ```
+<span class="md-math" data-mode="inline" data-tex="y"></span>
+%%% inline triple backticks
+```a``` $x$
+%%% expect
+```a``` <span class="md-math" data-mode="inline" data-tex="x"></span>
+%%% indented code
+para
+
+    $a$ code
+
+    $b$ more
+next $c$
+%%% expect
+para
+
+    $a$ code
+
+    $b$ more
+next <span class="md-math" data-mode="inline" data-tex="c"></span>
+%%% list continuation
+- item
+
+    $a$ continued
+%%% expect
+- item
+
+    <span class="md-math" data-mode="inline" data-tex="a"></span> continued
+%%% script block
+<script>
+$(x).y($z)
+</script>
+$w$
+%%% expect
+<script>
+$(x).y($z)
+</script>
+<span class="md-math" data-mode="inline" data-tex="w"></span>
+%%% comment block
+<!--
+$a$
+-->
+$b$
+%%% expect
+<!--
+$a$
+-->
+<span class="md-math" data-mode="inline" data-tex="b"></span>
+%%% yaml front matter
+---
+title: Hi $x$
+tags: [a]
+---
+$y$
+%%% expect
+<details class="front-matter">
+<summary>Front matter</summary>
+
+```yaml
+title: Hi $x$
+tags: [a]
+```
+
+</details>
+
+<span class="md-math" data-mode="inline" data-tex="y"></span>
+%%% toml front matter
++++
+title = "x"
++++
+body
+%%% expect
+<details class="front-matter">
+<summary>Front matter</summary>
+
+```toml
+title = "x"
+```
+
+</details>
+
+body
+%%% empty front matter
+---
+---
+body
+%%% expect
+body
+%%% hr is not front matter
+---
+Just a paragraph.
+---
+
+%%% expect
+---
+Just a paragraph.
+---
+%%% unclosed front matter
+---
+title: x
+
+%%% expect
+---
+title: x
+%%% front matter with fence
+---
+note: "```"
+---
+
+%%% expect
+<details class="front-matter">
+<summary>Front matter</summary>
+
+````yaml
+note: "```"
+````
+
+</details>
+%%% utf-8 text
+Café $\alpha$ – naïve $β$
+%%% expect
+Café <span class="md-math" data-mode="inline" data-tex="\alpha"></span> – naïve <span class="md-math" data-mode="inline" data-tex="β"></span>

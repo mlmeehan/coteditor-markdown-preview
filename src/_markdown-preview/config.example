@@ -1,0 +1,17 @@
+# Markdown Preview settings
+#
+# Lines starting with # are comments. To change a setting, remove the # in
+# front of it and edit the value. Changes apply the next time you preview.
+
+# The browser that shows previews: an app name such as Safari, Google Chrome,
+# Firefox or Arc. Leave it unset to use your default web browser.
+# browser = Safari
+
+# Page appearance: auto follows macOS, or use light or dark.
+# theme = auto
+
+# Mermaid, KaTeX, highlight.js and the emoji list are downloaded from
+# cdn.jsdelivr.net when a document needs them, then cached by your browser.
+# Set this to off to stop loading them; diagrams, math and code then show as
+# plain source text. Images a document links to on the web still load.
+# remote_libraries = on

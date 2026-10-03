@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly, to notice if a pinned library stops matching its hash on the CDN.
+    - cron: "23 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HOMEBREW_NO_AUTO_UPDATE: "1"
+  HOMEBREW_NO_INSTALL_CLEANUP: "1"
+
+jobs:
+  test:
+    name: Script and installer (macOS bash and awk)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install cmark-gfm and ShellCheck
+        run: brew install cmark-gfm shellcheck
+
+      - name: ShellCheck
+        run: shellcheck "src/Markdown Preview.sh" install.sh tests/*.sh
+
+      - name: prepare.awk with macOS awk
+        run: /bin/bash tests/test-prepare.sh
+
+      - name: Preview script with macOS bash 3.2
+        run: /bin/bash tests/test-script.sh
+
+      - name: Installer
+        run: /bin/bash tests/test-installer.sh
+
+      - name: Pinned libraries still match jsDelivr
+        run: /bin/bash tests/check-sri.sh
+
+  browsers:
+    name: Chromium and WebKit
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install cmark-gfm
+        run: brew install cmark-gfm
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install Playwright
+        working-directory: tests/browser
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install chromium webkit
+
+      - name: Render the feature tour and check it
+        working-directory: tests/browser
+        run: npm test
+
+      - name: Keep the screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: screenshots
+          path: tests/browser/screenshots/
+          if-no-files-found: ignore

@@ -1,0 +1,126 @@
+name: Release
+
+# Push a tag such as v1.0.0 to publish a release. The tag must match VERSION
+# in "src/Markdown Preview.sh", and CHANGELOG.md needs a section for it.
+#
+# The release is published as a pre-release first and installed on a fresh
+# Mac with the one-line command. Only then is it marked as the latest release,
+# which is the one the installer downloads. The repository must be public:
+# the checks download it the way users do, without signing in.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  HOMEBREW_NO_AUTO_UPDATE: "1"
+  HOMEBREW_NO_INSTALL_CLEANUP: "1"
+
+jobs:
+  release:
+    name: Test and publish a pre-release
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check the version
+        run: |
+          version=$(awk -F '"' '/^readonly VERSION=/ { print $2; exit }' "src/Markdown Preview.sh")
+          if [[ "v$version" != "$GITHUB_REF_NAME" ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME doesn't match VERSION=\"$version\" in the script."
+            exit 1
+          fi
+
+      - name: Test
+        run: |
+          brew install cmark-gfm
+          /bin/bash tests/test-prepare.sh
+          /bin/bash tests/test-script.sh
+          /bin/bash tests/test-installer.sh
+          /bin/bash tests/check-sri.sh
+
+      - name: Package
+        run: |
+          mkdir -p dist/coteditor-markdown-preview
+          cp -R src/. dist/coteditor-markdown-preview/
+          cp LICENSE THIRD-PARTY-NOTICES.md dist/coteditor-markdown-preview/
+          COPYFILE_DISABLE=1 tar -czf coteditor-markdown-preview.tar.gz -C dist coteditor-markdown-preview
+          shasum -a 256 coteditor-markdown-preview.tar.gz install.sh > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Release notes from CHANGELOG.md
+        run: |
+          awk -v version="[${GITHUB_REF_NAME#v}]" '
+            /^## / || /^\[[^]]+\]: / { if (found) exit }
+            /^## / && index($0, version) { found = 1; next }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          if [[ ! -s notes.md ]]; then
+            echo "::error::CHANGELOG.md has no section for ${GITHUB_REF_NAME#v}."
+            exit 1
+          fi
+
+      - name: Publish as a pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            coteditor-markdown-preview.tar.gz install.sh SHA256SUMS \
+            --title "$GITHUB_REF_NAME" --notes-file notes.md --prerelease --verify-tag
+
+  verify:
+    name: Install it on a fresh Mac
+    needs: release
+    runs-on: macos-latest
+    env:
+      INSTALLER: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/install.sh
+    steps:
+      - name: Install CotEditor and cmark-gfm
+        run: brew install --cask coteditor && brew install cmark-gfm
+
+      - name: Install the release with the one-line command
+        run: /bin/bash -c "$(curl -fsSL "$INSTALLER")" -- --version "$GITHUB_REF_NAME"
+
+      - name: Doctor
+        run: /bin/bash -c "$(curl -fsSL "$INSTALLER")" -- --doctor
+
+      - name: Preview a document with the installed script
+        run: |
+          script="$HOME/Library/Application Scripts/com.coteditor.CotEditor/Markdown Preview.@M.sh"
+          cat > hello.md <<'MARKDOWN'
+          # Hello
+
+          Inline $x^2$ math.
+          MARKDOWN
+          output=$(MARKDOWN_PREVIEW_NO_OPEN=1 "$script" "$PWD/hello.md" < hello.md)
+          grep -q 'class="md-math"' "${output%%$'\n'*}"
+
+  latest:
+    name: Mark it as the latest release
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mark as latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release edit "$GITHUB_REF_NAME" --prerelease=false --latest
+
+  update:
+    name: Install the latest release on a fresh Mac
+    needs: latest
+    runs-on: macos-latest
+    steps:
+      # Without --version, and without cmark-gfm installed beforehand, so the
+      # installer finds the latest release and installs cmark-gfm itself.
+      - name: Install with the one-line command
+        run: /bin/bash -c "$(curl -fsSL "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_REF_NAME/install.sh")"
+
+      - name: Check it installed this release
+        run: |
+          script="$HOME/Library/Application Scripts/com.coteditor.CotEditor/Markdown Preview.@M.sh"
+          grep -q "^readonly VERSION=\"${GITHUB_REF_NAME#v}\"" "$script"
+          [[ -x /opt/homebrew/bin/cmark-gfm || -x /usr/local/bin/cmark-gfm ]]
