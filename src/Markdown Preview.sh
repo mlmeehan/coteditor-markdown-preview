@@ -43,14 +43,14 @@ report() {
 
   if [[ -z $headless ]]; then
     /usr/bin/osascript - "$message" "$command" >/dev/null 2>&1 <<'APPLESCRIPT' || true
-on run {message, command}
-	activate
-	if command is "" then
-		display alert "Markdown Preview" message message as critical
-	else
-		set choice to display alert "Markdown Preview" message (message & return & return & command) as critical buttons {"Copy Command", "OK"} default button "OK"
-		if button returned of choice is "Copy Command" then set the clipboard to command
-	end if
+on run {errorText, fixCommand}
+  activate
+  if fixCommand is "" then
+    display alert "Markdown Preview" message errorText as critical
+  else
+    set choice to display alert "Markdown Preview" message (errorText & return & return & fixCommand) as critical buttons {"Copy Command", "OK"} default button "OK"
+    if button returned of choice is "Copy Command" then set the clipboard to fixCommand
+  end if
 end run
 APPLESCRIPT
   fi

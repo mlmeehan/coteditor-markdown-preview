@@ -83,6 +83,9 @@ version in the URL and replace its hash with:
 curl -sL URL | openssl dgst -sha384 -binary | openssl base64 -A
 ```
 
+When updating KaTeX, also change the URL in the doctor's reachability check in
+`install.sh`, which fetches `katex.min.js` to test that jsDelivr can be reached.
+
 Then run `tests/check-sri.sh` and the browser tests. Mermaid stays on 11.x for
 now: 12.0 changed the default layout and theme, so diagrams would look
 different from most other renderers.

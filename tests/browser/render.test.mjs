@@ -1,7 +1,7 @@
 // Renders Markdown with the preview script and checks the result in real
 // browsers: Chromium, and WebKit (Safari's engine) when it is installed.
 //
-//   cd tests/browser && npm install && npx playwright install chromium webkit
+//   cd tests/browser && npm ci && npx playwright install chromium webkit
 //   npm test
 //
 // Screenshots of the feature tour are written to tests/browser/screenshots.
