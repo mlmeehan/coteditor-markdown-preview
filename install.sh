@@ -225,7 +225,7 @@ canonical_shortcut() {
   local keys=$1 key modifiers out="" symbol
   key=${keys: -1}
   modifiers=${keys%?}
-  if [[ $key == [A-Z] ]]; then
+  if [[ $key == [[:upper:]] ]]; then
     modifiers+='$'
     key=$(printf '%s' "$key" | tr '[:upper:]' '[:lower:]')
   fi
