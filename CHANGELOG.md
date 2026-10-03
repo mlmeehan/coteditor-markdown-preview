@@ -6,25 +6,6 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-### Changed
-
-- Previews work without an internet connection. Mermaid, KaTeX and its fonts,
-  highlight.js and the emoji list are now installed with Markdown Preview
-  instead of loaded from cdn.jsdelivr.net, and the doctor checks them.
-  Reinstalling 1.0.0 afterwards leaves `_markdown-preview/lib` behind; it's
-  harmless, and you can delete it.
-
-### Removed
-
-- The `remote_libraries` setting, since nothing is loaded from the internet.
-  The doctor points it out if it's still in your config file.
-
-### Security
-
-- The preview refuses to write to a temporary folder that's a link or belongs
-  to someone else, since the page now runs the libraries copied there.
-- The installer and the doctor check every library file against its SHA-256.
-
 ## [1.0.0] - 2026-10-03
 
 The first public release.
@@ -39,13 +20,23 @@ The first public release.
   Obsidian callouts; emoji shortcodes; YAML and TOML front matter; heading
   anchors that match GitHub's; and `[TOC]`.
 - Light and dark appearance, print styles, and copy buttons on code blocks.
-- A settings file for the browser, the appearance and loading libraries from
-  the internet, and `custom.css` for your own styles.
-- A Content Security Policy that blocks scripts inside previewed documents.
+- Previews work without an internet connection: Mermaid, KaTeX and its fonts,
+  highlight.js and the emoji list are installed with Markdown Preview.
+- A settings file for the browser and the appearance, and `custom.css` for
+  your own styles.
 - A one-line installer that verifies downloads against their checksums and
   can update, change the shortcut, uninstall and diagnose problems. It only
   replaces or removes files it installed, and moves anything else in its way
   to a backup folder.
+
+### Security
+
+- A Content Security Policy that blocks scripts inside previewed documents.
+- The preview refuses to write to a temporary folder that's a link or belongs
+  to someone else, since the page runs the libraries copied there.
+- The installer and the doctor check every library file against its SHA-256.
+- Signed build provenance attestations for `install.sh` and the release
+  archive, which `gh attestation verify` checks.
 
 [Unreleased]: https://github.com/mlmeehan/coteditor-markdown-preview/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/mlmeehan/coteditor-markdown-preview/releases/tag/v1.0.0

@@ -4,7 +4,9 @@
 # front of it and edit the value. Changes apply the next time you preview.
 
 # The browser that shows previews: an app name such as Safari, Google Chrome,
-# Firefox or Arc. Leave it unset to use your default web browser.
+# Firefox or Arc, or the full path of an app, such as
+# /Applications/Firefox Developer Edition.app. Leave it unset to use your
+# default web browser.
 # browser = Safari
 
 # Page appearance: auto follows macOS, or use light or dark.

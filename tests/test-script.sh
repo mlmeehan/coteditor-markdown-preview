@@ -166,12 +166,10 @@ expect_in "$page" '/* custom styles marker */' "includes custom.css"
 if [[ $output == *"Opens with: Safari"* ]]; then pass "browser = Safari"; else fail "browser = Safari" "$output"; fi
 
 src=$(copy_src case)
-# remote_libraries is from version 1.0 and is now ignored.
-printf 'Theme = Dark\nREMOTE_LIBRARIES = Off\nbrowser = "Google Chrome"\n' > "$src/_markdown-preview/config"
+printf 'Theme = Dark\nbrowser = "Google Chrome"\n' > "$src/_markdown-preview/config"
 output=$(preview "$src" "$repo/examples/feature-tour.md")
 page=${output%%$'\n'*}
 expect_in "$page" 'data-theme="dark"' "setting names and values ignore case"
-expect_in "$page" '"libraries": "file://' "remote_libraries no longer turns the libraries off"
 if [[ $output == *"Opens with: Google Chrome"$'\n'* || $output == *"Opens with: Google Chrome" ]]; then
   pass "quotes around a value are optional"
 else

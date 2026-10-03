@@ -924,7 +924,7 @@ check_settings() {
     case $key in
       browser)
         if [[ -n $value ]] && ! app_exists "$value"; then
-          problem "Settings: there's no app called \"$value\". Use the name the browser has in your Applications folder, without \".app\"."
+          problem "Settings: there's no app called \"$value\". Use the name the browser has in your Applications folder, without \".app\", or its full path."
         fi
         ;;
       theme)
@@ -932,9 +932,6 @@ check_settings() {
           auto | light | dark) ;;
           *) warn "Settings: theme can be auto, light or dark, so \"$value\" is treated as auto" ;;
         esac
-        ;;
-      remote_libraries)
-        note "Settings: remote_libraries is no longer used, because the libraries are installed with Markdown Preview. You can remove that line."
         ;;
       *)
         warn "Settings: there's no setting called \"$key\". The settings are browser and theme."

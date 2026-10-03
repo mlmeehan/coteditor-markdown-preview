@@ -41,3 +41,41 @@ So you can judge the risks:
   Scripts folder in your Library, and only replaces or removes files it
   installed itself. Unless you pass `--no-deps`, it also installs cmark-gfm
   with Homebrew. It never uses `sudo`.
+
+## Verifying the installer
+
+The one-line install command runs the installer straight from the download.
+To read it first, or check it against the release's checksum, download it
+and its `SHA256SUMS` instead:
+
+```sh
+cd "$(mktemp -d)"
+curl -fsSLO https://github.com/mlmeehan/coteditor-markdown-preview/releases/latest/download/install.sh
+curl -fsSLO https://github.com/mlmeehan/coteditor-markdown-preview/releases/latest/download/SHA256SUMS
+grep ' install.sh$' SHA256SUMS | shasum -a 256 -c
+less install.sh
+/bin/bash install.sh
+```
+
+`shasum` prints `install.sh: OK` when the file matches. Options go after the
+file name, as in `/bin/bash install.sh --doctor`. For a manual install, check
+the archive the same way: download `coteditor-markdown-preview.tar.gz` too and
+run `grep ' coteditor-markdown-preview.tar.gz$' SHA256SUMS | shasum -a 256 -c`.
+
+The checksums are published in the same release as the files, so they show
+that a download arrived complete and unchanged, but not who made it. For that,
+each release's `install.sh` and archive have a signed
+[build provenance attestation](https://docs.github.com/en/actions/concepts/security/artifact-attestations),
+which records that this repository's release workflow built them from the
+tagged commit. With the [GitHub CLI](https://cli.github.com) installed, check a
+downloaded file with:
+
+```sh
+gh attestation verify install.sh --repo mlmeehan/coteditor-markdown-preview \
+  --signer-workflow mlmeehan/coteditor-markdown-preview/.github/workflows/release.yml
+```
+
+It prints `✓ Verification succeeded!` and the workflow and tag that built
+the file.
+The release workflow runs the same check before marking a release as the
+latest.

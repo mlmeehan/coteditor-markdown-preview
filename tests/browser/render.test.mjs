@@ -86,7 +86,7 @@ async function featureTour(browser, name) {
     console.log(`${name}, feature tour, ${scheme}`);
     const { page, context, problems, requests } = await open(browser, file, scheme);
 
-    check("math renders", (await count(page, ".katex")) === 4, `${await count(page, ".katex")} found`);
+    check("math renders", (await count(page, ".katex")) === 5, `${await count(page, ".katex")} found`);
     check("no math errors", (await count(page, ".katex-error")) === 0);
     // Fonts nothing uses yet stay unloaded, and WebKit reports a font it can't
     // load only in the console, so ask for one and check it arrived.
@@ -98,7 +98,9 @@ async function featureTour(browser, name) {
     check("diagram theme follows the appearance",
       (await page.locator(".diagram").first().getAttribute("data-theme")) === (scheme === "dark" ? "dark" : "default"));
     check("code is highlighted", (await count(page, "code.hljs")) === 4, `${await count(page, "code.hljs")} found`);
-    check("five alerts", (await count(page, ".markdown-alert")) === 5);
+    check("five alerts and a callout", (await count(page, ".markdown-alert")) === 6);
+    check("callout title",
+      (await page.locator(".markdown-alert-important .markdown-alert-title").last().textContent()) === "Obsidian callouts work too");
     check("table of contents", (await count(page, ".toc a")) === 8);
     check("task list", (await count(page, ".task-list-item")) === 3);
     check("footnotes", (await count(page, ".footnotes li")) === 2);
@@ -123,20 +125,6 @@ async function featureTour(browser, name) {
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(200);
     await page.screenshot({ path: path.join(shots, `${name}-${scheme}.png`), fullPage: true });
-    // The README shows the math and diagram sections.
-    // Measured in page coordinates, so the scroll position doesn't matter.
-    const box = (selector) => page.locator(selector).evaluate((element) => {
-      const rect = element.getBoundingClientRect();
-      return { x: rect.x + window.scrollX, y: rect.y + window.scrollY, width: rect.width };
-    });
-    const from = await box("#math");
-    const to = await box("#alerts");
-    const column = await box("#content");
-    await page.screenshot({
-      path: path.join(shots, `${name}-${scheme}-showcase.png`),
-      fullPage: true,
-      clip: { x: column.x - 32, y: from.y - 20, width: column.width + 64, height: to.y - from.y - 4 },
-    });
     await context.close();
   }
 }
@@ -161,12 +149,11 @@ async function edgeCases(browser, name) {
 
 async function settings(browser, name) {
   console.log(`${name}, settings`);
-  const dark = configuredCopy("theme = dark\nremote_libraries = off\n");
+  const dark = configuredCopy("theme = dark\n");
   const { page, context, requests } = await open(browser, preview(tour, { srcDir: dark }), "light");
 
   check("theme = dark wins over a light system",
     (await page.evaluate(() => getComputedStyle(document.body).backgroundColor)) !== "rgb(255, 255, 255)");
-  check("the old remote_libraries setting changes nothing", (await count(page, ".diagram svg")) === 2);
   check("no network requests", requests.length === 0, requests.join(", "));
   await context.close();
 }

@@ -27,6 +27,8 @@ The installer:
 - installs [cmark-gfm](https://github.com/github/cmark-gfm), GitHub's Markdown renderer, with [Homebrew](https://brew.sh) if you don't have it yet,
 - verifies the download against its published checksum, and doesn't need `sudo`.
 
+To read the installer before running it, or check it against the release's checksum first, see [Verifying the installer](SECURITY.md#verifying-the-installer).
+
 Run the same command again whenever you want to update; your shortcut and settings are kept.
 
 **Requirements:** CotEditor on macOS, a current browser (Safari, Chrome, Firefox, Edge or Arc), and cmark-gfm. If you don't use Homebrew, install cmark-gfm with MacPorts (`sudo port install cmark-gfm`) before running the installer.
@@ -57,7 +59,7 @@ Run the same command again whenever you want to update; your shortcut and settin
 
 The preview opens in your web browser. It's a snapshot: after editing, press ⇧⌘M again for a fresh one. Relative links and images resolve against the document's folder, so save new documents before previewing images that sit next to them.
 
-Want to see everything it can do? Download this repository (**Code ▸ Download ZIP**), open `examples/feature-tour.md` in CotEditor and preview it.
+Want to see everything it can do? Download [`feature-tour.md`](https://github.com/mlmeehan/coteditor-markdown-preview/raw/main/examples/feature-tour.md), open it in CotEditor and preview it.
 
 ## What it renders
 
@@ -67,21 +69,37 @@ Want to see everything it can do? Download this repository (**Code ▸ Download 
 | Footnotes | `Text[^1]` … `[^1]: The note.` |
 | [Mermaid](https://mermaid.js.org) diagrams | a ` ```mermaid ` code block |
 | Math with [KaTeX](https://katex.org) | `$inline$`, `$$display$$`, `` $`inline`$ `` or a ` ```math ` block |
-| Syntax highlighting for about 60 languages | ` ```python `, ` ```sql `, ` ```swift `, … |
+| Syntax highlighting for about 60 languages, with a copy button | ` ```python `, ` ```sql `, ` ```swift `, … |
 | [Alerts](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts) | `> [!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]` (Obsidian's `> [!info] Title` works too) |
 | Emoji shortcodes | `:rocket:` |
 | YAML or TOML front matter | shown as a collapsed block instead of stray text |
-| A table of contents | `[TOC]` on its own line |
+| A table of contents | `[TOC]` (or `[[TOC]]`) on its own line |
 | Raw HTML | `<details>`, `<kbd>`, `<sub>`, `<mark>`, … |
 
 Headings get anchor links that match GitHub's, so `[link](#some-heading)` works the same way in both places. Light and dark mode follow macOS, and the page prints cleanly.
+
+<p>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/code-dark.png">
+    <img alt="A table and three highlighted code blocks: Python, Swift and a diff" src="docs/images/code-light.png" width="49%">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/alerts-dark.png">
+    <img alt="GitHub's five alerts, Note, Tip, Important, Warning and Caution, and an Obsidian callout with its own title" src="docs/images/alerts-light.png" width="49%">
+  </picture>
+</p>
+
+The [syntax reference](docs/syntax.md) has the details: the callout types, math rules, code block languages and more.
+
+**How it differs from GitHub:** it uses the same parser, so ordinary Markdown renders the same. But raw HTML isn't sanitized the way GitHub does it (only scripts are blocked), `@mentions` and `#123` references stay plain text, and `[TOC]` and callouts are extras GitHub doesn't have. The preview is a snapshot rather than a live view. See [Differences from GitHub](docs/syntax.md#differences-from-github) for the full list.
 
 ## Settings
 
 Settings live in a small text file: `~/Library/Application Scripts/com.coteditor.CotEditor/_markdown-preview/config`. Open it in CotEditor, remove the `#` in front of a setting and change its value:
 
 ```ini
-# The browser that shows previews. Leave unset for your default browser.
+# The browser that shows previews: an app name or the full path of an app.
+# Leave unset for your default browser.
 browser = Safari
 
 # auto follows macOS; light or dark always use that appearance.
@@ -96,7 +114,7 @@ theme = auto
 /bin/bash -c "$(curl -fsSL https://github.com/mlmeehan/coteditor-markdown-preview/releases/latest/download/install.sh)" -- --shortcut '@~p'
 ```
 
-That one is ⌥⌘P; use `--shortcut none` for no shortcut. You can also rename the script file in the Scripts folder yourself, as described in CotEditor's help under *Customize the Script menu*.
+That one is ⌥⌘P; use `--shortcut none` for no shortcut. You can also rename the script file in the Scripts folder yourself, as described on the *Customize Script menu* page of CotEditor's help (**Help ▸ CotEditor Help**).
 
 ## Update, check or uninstall
 

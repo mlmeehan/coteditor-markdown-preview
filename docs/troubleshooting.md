@@ -10,7 +10,7 @@ Paste this into Terminal:
 /bin/bash -c "$(curl -fsSL https://github.com/mlmeehan/coteditor-markdown-preview/releases/latest/download/install.sh)" -- --doctor
 ```
 
-It checks CotEditor, the installed script and its files, cmark-gfm, your settings, clashing shortcuts and whether the page can reach its libraries, then renders a small test document the way CotEditor runs the script. Anything marked ✗ is a problem, usually with the fix printed next to it. If you open an issue, include this report.
+It checks CotEditor, the installed script and its files, cmark-gfm, your settings, clashing shortcuts and whether the libraries are all there and intact, then renders a small test document the way CotEditor runs the script. Anything marked ✗ is a problem, usually with the fix printed next to it. If you open an issue, include this report.
 
 ## CotEditor's Console
 
@@ -85,7 +85,7 @@ Use the name the app has in your Applications folder, without `.app`: Safari, Go
 
 ## Diagrams, math or code highlighting show as plain text
 
-Those three, and emoji shortcodes, are drawn by libraries installed in `_markdown-preview/lib`, which work without an internet connection. If they're missing or incomplete, the script says so and suggests reinstalling, and the doctor lists what's missing. Reinstalling with the one-line command restores them.
+Those three, and emoji shortcodes, are drawn by libraries installed in `_markdown-preview/lib`, which work without an internet connection. If they're missing or incomplete, the script says so and suggests reinstalling, and the doctor says how many files are missing or damaged. Reinstalling with the one-line command restores them.
 
 The page uses a copy of them in your temporary folder, next to the previews, because browsers only let a page load fonts from its own folder. The script puts the copy back if macOS has cleaned it away.
 

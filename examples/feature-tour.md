@@ -16,7 +16,7 @@ You can write **bold**, *italic*, ***both***, ~~strikethrough~~, `inline code`, 
 
 Links can be [inline](https://coteditor.com), [relative](feature-tour.md) or bare: https://github.com and www.example.com. Shortcodes become emoji :rocket: :tada: :+1:, but `:not_in_code:` stays as typed.
 
-Prices such as $5 and $10 stay text, while $e^{i\pi} + 1 = 0$ is math.
+Prices such as $5 and $10 stay text, while $e^{i\pi} + 1 = 0$ is math. Write \$ for a dollar sign that should never start math.
 
 ## Lists
 
@@ -63,7 +63,7 @@ struct Greeting {
 
 ## Math
 
-Inline math such as $\sqrt{a^2 + b^2}$ sits in the text, and display math gets its own line:
+Inline math such as $\sqrt{a^2 + b^2}$ or GitHub's $`\tfrac{1}{2}mv^2`$ sits in the text, and display math gets its own line:
 
 $$
 \begin{aligned}
@@ -112,6 +112,9 @@ sequenceDiagram
 
 > [!CAUTION]
 > Advises about risks or negative outcomes of certain actions.
+
+> [!example] Obsidian callouts work too
+> Their types map onto the five alerts above, and text after the marker becomes the title.
 
 ## Images, details and footnotes
 

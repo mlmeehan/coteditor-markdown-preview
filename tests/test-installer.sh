@@ -192,7 +192,7 @@ if log=$(/bin/bash -c "$(cat "$installer")" --uninstal 2>&1); then false; fi
 check "rejects a mistyped option without --" contains "$log" "Unknown option \"--uninstal\""
 
 echo "Doctor"
-printf 'them = dark\nremote_libraries = maybe\nTheme = Dark\n' >> "$support/config"
+printf 'them = dark\nTheme = Dark\n' >> "$support/config"
 log=$("$installer" --doctor 2>&1 || true)
 check "finds the installation" contains "$log" "Installed: \"Markdown Preview.@M.sh\""
 check "finds cmark-gfm" contains "$log" "cmark-gfm: "
@@ -203,7 +203,6 @@ check "and its sample document" test -z "$(find "$TMPDIR" -name 'markdown-previe
 check "notices the clash" contains "$log" "uses the same shortcut"
 check "mentions your own copies" contains "$log" "\"Markdown Preview in Chrome.@~M.sh\", a copy"
 check "points out an unknown setting" contains "$log" "no setting called \"them\""
-check "says remote_libraries is no longer used" contains "$log" "remote_libraries is no longer used"
 check "checks the libraries" contains "$log" "Libraries (no internet needed): katex"
 check "accepts values in any case" lacks "$log" "\"Dark\" is treated"
 # Looking up the browser needs macOS itself, not the stand-in uname.
